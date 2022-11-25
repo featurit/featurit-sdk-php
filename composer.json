@@ -1,0 +1,48 @@
+{
+    "name": "featurit/featurit-sdk-php",
+    "description": "PHP SDK for FeaturIT",
+    "keywords": ["featurit", "feature flag", "feature toggle", "user targeting", "a b testing", "feature", "feature management"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "FeaturIT",
+            "email": "featurit_tech@gmail.com",
+            "homepage": "https://www.featurit.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Featurit\\Client\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Featurit\\Client\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    },
+    "require": {
+        "ext-json": "*",
+        "laminas/laminas-cache-storage-adapter-filesystem": "^2.3",
+        "laminas/laminas-serializer": "^2.14",
+        "php-http/client-common": "^2.3",
+        "php-http/discovery": "^1.12",
+        "php-http/mock-client": "^1.5",
+        "psr/http-client": "^1.0",
+        "psr/http-client-implementation": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/simple-cache": "^1.0",
+        "psr/simple-cache-implementation": "^1.0"
+    },
+    "require-dev": {
+        "laminas/laminas-cache": "^3.8",
+        "laminas/laminas-diactoros": "^2.4",
+        "php-http/curl-client": "^2.1",
+        "phpunit/phpunit": "^9",
+        "symfony/var-dumper": "^5.1"
+    }
+}
