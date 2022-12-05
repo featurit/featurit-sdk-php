@@ -1,6 +1,6 @@
 <?php
 
-namespace Featurit\Client;
+namespace Featurit\Client\HttpClient;
 
 use Http\Client\Common\HttpMethodsClient;
 use Http\Client\Common\HttpMethodsClientInterface;

@@ -3,6 +3,7 @@
 namespace Featurit\Client;
 
 use Featurit\Client\Endpoints\FeatureFlags;
+use Featurit\Client\HttpClient\ClientBuilder;
 use Http\Client\Common\HttpMethodsClientInterface;
 use Http\Client\Common\Plugin\BaseUriPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
@@ -25,7 +26,7 @@ class Featurit
     public function __construct(
         string         $tenantIdentifier,
         string         $apiKey,
-        int            $cacheTtlMinutes = 5,
+        int            $cacheTtlMinutes = FeaturitBuilder::DEFAULT_CACHE_TTL_MINUTES,
         CacheInterface $cache = null,
         ClientBuilder  $clientBuilder = null,
         UriFactory     $uriFactory = null

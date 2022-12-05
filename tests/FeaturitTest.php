@@ -4,8 +4,8 @@ namespace Featurit\Client\Tests;
 
 use ArgumentCountError;
 use Exception;
-use Featurit\Client\ClientBuilder;
 use Featurit\Client\Featurit;
+use Featurit\Client\HttpClient\ClientBuilder;
 use Http\Mock\Client;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\StreamFactory;
