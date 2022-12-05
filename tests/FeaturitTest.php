@@ -107,9 +107,6 @@ class FeaturitTest extends TestCase
         $this->assertTrue($allOfTheValuesAreBooleans);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_is_active_returns_false_if_feature_name_doesnt_exist(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
@@ -119,9 +116,6 @@ class FeaturitTest extends TestCase
         $this->assertFalse($featureFlagValue);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_is_active_returns_false_if_feature_name_exists_but_is_not_active(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
@@ -131,9 +125,6 @@ class FeaturitTest extends TestCase
         $this->assertFalse($featureFlagValue);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_is_active_returns_true_if_feature_name_exists_and_is_active(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
@@ -177,6 +168,7 @@ class FeaturitTest extends TestCase
             self::TENANT_IDENTIFIER,
             $apiKey,
             5,
+            null,
             null,
             $clientBuilder
         );

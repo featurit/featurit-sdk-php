@@ -4,6 +4,9 @@ namespace Featurit\Client;
 
 use Featurit\Client\Endpoints\FeatureFlags;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use Http\Client\Common\HttpMethodsClientInterface;
 use Http\Client\Common\Plugin\BaseUriPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
@@ -20,20 +23,66 @@ class Featurit
     private string $tenantIdentifier;
     private string $apiKey;
 
+    private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
 
     public function __construct(
-        string         $tenantIdentifier,
-        string         $apiKey,
-        int            $cacheTtlMinutes = FeaturitBuilder::DEFAULT_CACHE_TTL_MINUTES,
-        CacheInterface $cache = null,
-        ClientBuilder  $clientBuilder = null,
-        UriFactory     $uriFactory = null
+        string                          $tenantIdentifier,
+        string                          $apiKey,
+        int                             $cacheTtlMinutes = FeaturitBuilder::DEFAULT_CACHE_TTL_MINUTES,
+        FeaturitUserContextProvider     $featuritUserContextProvider = null,
+        CacheInterface                  $cache = null,
+        ClientBuilder                   $clientBuilder = null,
+        UriFactory                      $uriFactory = null
     ) {
         $this->tenantIdentifier = $tenantIdentifier;
         $this->apiKey = $apiKey;
 
+        $this->featuritUserContextProvider = $featuritUserContextProvider ?: new DefaultFeaturitUserContextProvider();
+
+        $this->setCache($cache, $cacheTtlMinutes);
+
+        $this->setHttpClientBuilder($clientBuilder, $uriFactory);
+    }
+
+    public function isActive(string $featureName): bool
+    {
+        return $this->featureFlags()->isActive($featureName);
+    }
+
+    public function featureFlags(): FeatureFlags
+    {
+        return new Endpoints\FeatureFlags($this);
+    }
+
+    public function getUserContext(): FeaturitUserContext
+    {
+        return $this->featuritUserContextProvider->getUserContext();
+    }
+
+    public function getApiKey(): string
+    {
+        return $this->apiKey;
+    }
+
+    public function getCache(): CacheInterface
+    {
+        return $this->cache;
+    }
+
+    public function getHttpClient(): HttpMethodsClientInterface
+    {
+        return $this->clientBuilder->getHttpClient();
+    }
+
+    /**
+     * @param CacheInterface|null $cache
+     * @param int $cacheTtlMinutes
+     * @return void
+     */
+    private function setCache(?CacheInterface $cache, int $cacheTtlMinutes): void
+    {
         if (is_null($cache)) {
             $storage = new Filesystem();
 
@@ -59,7 +108,15 @@ class Featurit
         }
 
         $this->cache = $cache;
+    }
 
+    /**
+     * @param ClientBuilder|null $clientBuilder
+     * @param UriFactory|null $uriFactory
+     * @return void
+     */
+    private function setHttpClientBuilder(?ClientBuilder $clientBuilder, ?UriFactory $uriFactory): void
+    {
         $this->clientBuilder = $clientBuilder ?: new ClientBuilder();
         $uriFactory = $uriFactory ?: Psr17FactoryDiscovery::findUriFactory();
 
@@ -78,33 +135,5 @@ class Featurit
                 ]
             )
         );
-    }
-
-    /**
-     * @throws \Http\Client\Exception
-     */
-    public function isActive(string $featureName): bool
-    {
-        return $this->featureFlags()->isActive($featureName);
-    }
-
-    public function featureFlags(): FeatureFlags
-    {
-        return new Endpoints\FeatureFlags($this);
-    }
-
-    public function getApiKey(): string
-    {
-        return $this->apiKey;
-    }
-
-    public function getCache(): CacheInterface
-    {
-        return $this->cache;
-    }
-
-    public function getHttpClient(): HttpMethodsClientInterface
-    {
-        return $this->clientBuilder->getHttpClient();
     }
 }

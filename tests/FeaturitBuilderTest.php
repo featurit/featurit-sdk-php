@@ -2,17 +2,18 @@
 
 namespace Featurit\Client\Tests;
 
-use ArgumentCountError;
 use Exception;
 use Featurit\Client\Featurit;
 use Featurit\Client\FeaturitBuilder;
 use Featurit\Client\HttpClient\ClientBuilder;
-use Http\Mock\Client;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
+use Http\Discovery\Psr17FactoryDiscovery;
 use Laminas\Cache\Psr\SimpleCache\SimpleCacheDecorator;
 use Laminas\Cache\Storage\Adapter\Filesystem;
 use Laminas\Cache\Storage\Plugin\Serializer;
-use Laminas\Diactoros\Response;
-use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\TestCase;
 
 class FeaturitBuilderTest extends TestCase
@@ -46,6 +47,7 @@ class FeaturitBuilderTest extends TestCase
             ->setTenantIdentifier(self::TENANT_IDENTIFIER)
             ->setApiKey(self::VALID_API_KEY)
             ->setCacheTtlMinutes(self::CACHE_TTL_MINUTES)
+            ->setFeaturitUserContextProvider(new DefaultFeaturitUserContextProvider())
             ->setCache(new SimpleCacheDecorator((new Filesystem())->addPlugin(new Serializer())))
             ->setHttpClientBuilder(new ClientBuilder())
             ->build();

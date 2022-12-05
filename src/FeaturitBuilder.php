@@ -3,6 +3,7 @@
 namespace Featurit\Client;
 
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Http\Message\UriFactory;
 use Psr\SimpleCache\CacheInterface;
 
@@ -13,6 +14,7 @@ class FeaturitBuilder
     private string $tenantIdentifier;
     private string $apiKey;
     private int $cacheTtlMinutes = self::DEFAULT_CACHE_TTL_MINUTES;
+    private FeaturitUserContextProvider $featuritUserContextProvider;
     private CacheInterface $cache;
     private ClientBuilder $httpClientBuilder;
     private UriFactory $uriFactory;
@@ -34,6 +36,13 @@ class FeaturitBuilder
     public function setCacheTtlMinutes(int $cacheTtlMinutes): FeaturitBuilder
     {
         $this->cacheTtlMinutes = $cacheTtlMinutes;
+
+        return $this;
+    }
+
+    public function setFeaturitUserContextProvider(FeaturitUserContextProvider $featuritUserContextProvider): FeaturitBuilder
+    {
+        $this->featuritUserContextProvider = $featuritUserContextProvider;
 
         return $this;
     }
@@ -76,6 +85,7 @@ class FeaturitBuilder
             $this->tenantIdentifier,
             $this->apiKey,
             $this->cacheTtlMinutes,
+            $this->featuritUserContextProvider ?? null,
             $this->cache ?? null,
             $this->httpClientBuilder ?? null,
             $this->uriFactory ?? null
