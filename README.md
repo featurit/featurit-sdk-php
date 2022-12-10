@@ -1,5 +1,12 @@
 # FeaturIT SDK for PHP
 
+<p>
+<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/featurit/featurit-sdk-php.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/featurit/featurit-sdk-php"><img src="https://img.shields.io/packagist/dt/featurit/featurit-sdk-php" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/featurit/featurit-sdk-php"><img src="https://img.shields.io/packagist/v/featurit/featurit-sdk-php" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/featurit/featurit-sdk-php"><img src="https://img.shields.io/packagist/l/featurit/featurit-sdk-php" alt="License"></a>
+</p>
+
 PHP client for the FeaturIT Feature Flag management platform.
 
 ## Description
