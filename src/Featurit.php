@@ -27,6 +27,7 @@ class Featurit
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
+    private CacheInterface $backupCache;
     private FeatureSegmentationService $featureSegmentationService;
 
     public function __construct(
@@ -75,6 +76,11 @@ class Featurit
         return $this->cache;
     }
 
+    public function getBackupCache(): CacheInterface
+    {
+        return $this->backupCache;
+    }
+
     public function getHttpClient(): HttpMethodsClientInterface
     {
         return $this->clientBuilder->getHttpClient();
@@ -93,28 +99,13 @@ class Featurit
     private function setCache(?CacheInterface $cache, int $cacheTtlMinutes): void
     {
         if (is_null($cache)) {
-            $storage = new Filesystem();
-
-            $plugin = new ExceptionHandler();
-            $plugin->getOptions()->setThrowExceptions(true);
-
-            $storage->addPlugin($plugin);
-
-            $plugin = new Serializer();
-            $storage->addPlugin($plugin);
-
-            $storage->getOptions()->setTtl($cacheTtlMinutes * 60);
-
-            $cacheDirName = join(DIRECTORY_SEPARATOR, [dirname(__FILE__), '..', 'cache']);
-
-            if (!file_exists($cacheDirName)) {
-                mkdir($cacheDirName, 0755, true);
-            }
-
-            $storage->getOptions()->setCacheDir($cacheDirName);
-
-            $cache = new SimpleCacheDecorator($storage);
+            $cache = $this->setLocalCache($cacheTtlMinutes);
         }
+
+        /**
+         * Backup cache will be used when there's some problem with the FeaturIT API.
+         */
+        $this->backupCache = $this->setLocalCache(0);
 
         $this->cache = $cache;
     }
@@ -144,5 +135,34 @@ class Featurit
                 ]
             )
         );
+    }
+
+    /**
+     * @param int $cacheTtlMinutes
+     * @return CacheInterface
+     */
+    private function setLocalCache(int $cacheTtlMinutes): SimpleCacheDecorator
+    {
+        $storage = new Filesystem();
+
+        $plugin = new ExceptionHandler();
+        $plugin->getOptions()->setThrowExceptions(true);
+
+        $storage->addPlugin($plugin);
+
+        $plugin = new Serializer();
+        $storage->addPlugin($plugin);
+
+        $storage->getOptions()->setTtl($cacheTtlMinutes * 60);
+
+        $cacheDirName = join(DIRECTORY_SEPARATOR, [dirname(__FILE__), '..', 'cache']);
+
+        if (!file_exists($cacheDirName)) {
+            mkdir($cacheDirName, 0755, true);
+        }
+
+        $storage->getOptions()->setCacheDir($cacheDirName);
+
+        return new SimpleCacheDecorator($storage);
     }
 }

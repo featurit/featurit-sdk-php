@@ -3,9 +3,9 @@
 namespace Featurit\Client\Tests;
 
 use ArgumentCountError;
-use Exception;
 use Featurit\Client\Featurit;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException;
 use Http\Mock\Client;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\StreamFactory;
@@ -99,21 +99,15 @@ class FeaturitTest extends TestCase
         $featurit = new Featurit();
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_featurit_throws_exception_with_invalid_api_key(): void
     {
-        $this->expectException(Exception::class);
+        $this->expectException(InvalidApiKeyException::class);
 
         $featurit = $this->getFeaturit(self::INVALID_API_KEY);
 
         $featurit->featureFlags()->all();
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_featurit_returns_array_with_features(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
@@ -123,9 +117,6 @@ class FeaturitTest extends TestCase
         $this->assertIsArray($featureFlags);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_featurit_feature_flags_have_string_keys(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
@@ -143,9 +134,6 @@ class FeaturitTest extends TestCase
         $this->assertTrue($allOfTheValuesAreStrings);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_featurit_feature_flags_have_boolean_values(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
