@@ -5,8 +5,9 @@ namespace Featurit\Client;
 use Featurit\Client\Endpoints\FeatureFlags;
 use Featurit\Client\HttpClient\ClientBuilder;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
-use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\Services\FeatureSegmentationService;
 use Http\Client\Common\HttpMethodsClientInterface;
 use Http\Client\Common\Plugin\BaseUriPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
@@ -26,6 +27,7 @@ class Featurit
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
+    private FeatureSegmentationService $featureSegmentationService;
 
     public function __construct(
         string                          $tenantIdentifier,
@@ -44,6 +46,8 @@ class Featurit
         $this->setCache($cache, $cacheTtlMinutes);
 
         $this->setHttpClientBuilder($clientBuilder, $uriFactory);
+
+        $this->featureSegmentationService = new FeatureSegmentationService();
     }
 
     public function isActive(string $featureName): bool
@@ -74,6 +78,11 @@ class Featurit
     public function getHttpClient(): HttpMethodsClientInterface
     {
         return $this->clientBuilder->getHttpClient();
+    }
+
+    public function getFeatureSegmentationService(): FeatureSegmentationService
+    {
+        return $this->featureSegmentationService;
     }
 
     /**
@@ -122,7 +131,7 @@ class Featurit
 
         $this->clientBuilder->addPlugin(
             new BaseUriPlugin(
-                $uriFactory->createUri("https://{$this->tenantIdentifier}.featurit.com/api/{$this->apiKey}")
+                $uriFactory->createUri("https://{$this->tenantIdentifier}.featurit.com/api/v1/{$this->apiKey}")
             )
         );
 

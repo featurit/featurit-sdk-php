@@ -6,7 +6,7 @@
     "authors": [
         {
             "name": "FeaturIT",
-            "email": "featurit_tech@gmail.com",
+            "email": "featurit.tech@gmail.com",
             "homepage": "https://www.featurit.com"
         }
     ],
@@ -26,9 +26,11 @@
         "sort-packages": true
     },
     "require": {
+        "php": "^8.0.2",
         "ext-json": "*",
         "laminas/laminas-cache-storage-adapter-filesystem": "^2.3",
         "laminas/laminas-serializer": "^2.14",
+        "lastguest/murmurhash": "^2.1",
         "php-http/client-common": "^2.3",
         "php-http/discovery": "^1.12",
         "php-http/mock-client": "^1.5",
@@ -39,6 +41,7 @@
         "psr/simple-cache-implementation": "^1.0"
     },
     "require-dev": {
+        "fakerphp/faker": "^1.21",
         "laminas/laminas-cache": "^3.8",
         "laminas/laminas-diactoros": "^2.4",
         "php-http/curl-client": "^2.1",

@@ -2,38 +2,30 @@
 
 namespace Featurit\Client\Modules\Segmentation;
 
+use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseAttributes;
+
 final class DefaultFeaturitUserContext implements FeaturitUserContext
 {
-    private string $userId;
-    private string $sessionId;
-    private string $ipAddress;
-    private array $customAttributes;
-
     public function __construct(
-        ?string $userId,
-        ?string $sessionId,
-        ?string $ipAddress,
-        array $customAttributes = []
-    ) {
-        $this->userId = $userId ?? "";
-        $this->sessionId = $sessionId ?? "";
-        $this->ipAddress = $ipAddress ?? "";
-        $this->customAttributes = $customAttributes;
-    }
+        private ?string $userId,
+        private ?string $sessionId,
+        private ?string $ipAddress,
+        private ?array $customAttributes = []
+    ) {}
 
     public function getUserId(): ?string
     {
-        return $this->userId ?? null;
+        return $this->userId;
     }
 
     public function getSessionId(): ?string
     {
-        return $this->sessionId ?? null;
+        return $this->sessionId;
     }
 
     public function getIpAddress(): ?string
     {
-        return $this->ipAddress ?? null;
+        return $this->ipAddress;
     }
 
     public function getCustomAttributes(): array
@@ -41,24 +33,28 @@ final class DefaultFeaturitUserContext implements FeaturitUserContext
         return $this->customAttributes;
     }
 
-    public function getCustomAttribute(string $name): ?string
-    {
-        return $this->customAttributes[$name];
-    }
-
     public function hasCustomAttribute(string $name): bool
     {
         return array_key_exists($name, $this->customAttributes);
     }
 
+    public function getCustomAttribute(string $name): ?string
+    {
+        return $this->customAttributes[$name] ?? null;
+    }
+
+    public function getAttribute(string $name): ?string
+    {
+        return $this->toArray()[$name] ?? null;
+    }
+
     public function toArray(): array
     {
-        $featuritUserContextArray = $this->customAttributes;
-
-        $featuritUserContextArray['userId'] = $this->userId;
-        $featuritUserContextArray['sessionId'] = $this->sessionId;
-        $featuritUserContextArray['ipAddress'] = $this->ipAddress;
-
-        return $featuritUserContextArray;
+        return [
+            BaseAttributes::USER_ID => $this->userId,
+            BaseAttributes::SESSION_ID => $this->sessionId,
+            BaseAttributes::IP_ADDRESS => $this->ipAddress,
+            ...$this->customAttributes,
+        ];
     }
 }

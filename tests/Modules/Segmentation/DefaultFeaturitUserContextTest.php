@@ -133,4 +133,48 @@ class DefaultFeaturitUserContextTest extends TestCase
 
         $this->assertEquals($expectedArray, $defaultFeaturitUserContext->toArray());
     }
+
+    /**
+     * Test the getters for Base Attributes.
+     *
+     * @return void
+     */
+    public function test_getters_work_for_base_attributes(): void
+    {
+        $featuritUserContext = new DefaultFeaturitUserContext('3578', null, '33.99.11.15');
+
+        $this->assertEquals('3578', $featuritUserContext->getUserId());
+        $this->assertNull($featuritUserContext->getSessionId());
+        $this->assertEquals('33.99.11.15', $featuritUserContext->getIpAddress());
+    }
+
+    /**
+     * Test hasCustomAttribute.
+     *
+     * @return void
+     */
+    public function test_has_custom_attribute_method(): void
+    {
+        $featuritUserContext = new DefaultFeaturitUserContext('3578', null, '33.99.11.15', [
+            'email' => 'info@featurit.com',
+        ]);
+
+        $this->assertTrue($featuritUserContext->hasCustomAttribute('email'));
+        $this->assertFalse($featuritUserContext->hasCustomAttribute('age'));
+    }
+
+    /**
+     * Test getCustomAttribute.
+     *
+     * @return void
+     */
+    public function test_get_custom_attribute_method(): void
+    {
+        $featuritUserContext = new DefaultFeaturitUserContext('3578', null, '33.99.11.15', [
+            'email' => 'info@featurit.com',
+        ]);
+
+        $this->assertEquals('info@featurit.com', $featuritUserContext->getCustomAttribute('email'));
+        $this->assertNull($featuritUserContext->getCustomAttribute('age'));
+    }
 }

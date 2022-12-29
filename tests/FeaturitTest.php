@@ -19,20 +19,76 @@ class FeaturitTest extends TestCase
     const VALID_API_KEY = "e39e2919-13ca-4a14-1739-ecdf32d51dba";
 
     const NON_EXISTING_FEATURE_NAME = "NON_EXISTING_FEATURE_NAME";
-    const EXISTING_INACTIVE_FEATURE_NAME = "Login";
-    const EXISTING_ACTIVE_FEATURE_NAME = "Sign Up";
+    const EXISTING_INACTIVE_FEATURE_NAME = "Feat2";
+    const EXISTING_ACTIVE_FEATURE_NAME = "SimpleFeat";
 
     const SAMPLE_API_RESPONSE = '{
         "data": {
-            "Login": false,
-            "Sign Up": true,
-            "Recover password": false,
-            "Create User Invitation": false,
-            "Create User": true,
-            "Update User": false,
-            "List Users": false,
-            "Delete User": false,
-            "View User": false
+            "SimpleFeat": {
+                "name": "SimpleFeat",
+                "active": true,
+                "distribution_attribute": "userId",
+                "segments": [],
+                "versions": []
+            },
+            "Feat": {
+                "name": "Feat",
+                "active": true,
+                "distribution_attribute": "userId",
+                "segments": [
+                    {
+                        "rollout_attribute": "ipAddress",
+                        "rollout_percentage": 100,
+                        "string_rules": [
+                            {
+                                "attribute": "userId",
+                                "operator": "EQUALS",
+                                "value": "1"
+                            }
+                        ],
+                        "number_rules": []
+                    }
+                ],
+                "versions": [
+                    {
+                        "name": "v1",
+                        "distribution_percentage": 45
+                    },
+                    {
+                        "name": "v2",
+                        "distribution_percentage": 55
+                    }
+                ]
+            },
+            "Feat2": {
+                "name": "Feat2",
+                "active": false,
+                "distribution_attribute": "userId",
+                "segments": [
+                    {
+                        "rollout_attribute": "ipAddress",
+                        "rollout_percentage": 100,
+                        "string_rules": [
+                            {
+                                "attribute": "userId",
+                                "operator": "EQUALS",
+                                "value": "1"
+                            }
+                        ],
+                        "number_rules": []
+                    }
+                ],
+                "versions": [
+                    {
+                        "name": "v1",
+                        "distribution_percentage": 45
+                    },
+                    {
+                        "name": "v2",
+                        "distribution_percentage": 55
+                    }
+                ]
+            }
         }
     }';
 
@@ -95,10 +151,9 @@ class FeaturitTest extends TestCase
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
 
         $featureFlags = $featurit->featureFlags()->all();
-
         $allOfTheValuesAreBooleans = true;
-        foreach($featureFlags as $featureName => $isActive) {
-            if (!is_bool($isActive)) {
+        foreach($featureFlags as $featureName => $featureFlag) {
+            if (!is_bool($featureFlag->isActive())) {
                 $allOfTheValuesAreBooleans = false;
                 break;
             }
@@ -134,9 +189,6 @@ class FeaturitTest extends TestCase
         $this->assertTrue($featureFlagValue);
     }
 
-    /**
-     * @throws \Http\Client\Exception
-     */
     public function test_is_active_shortcut_works_as_test_is_active_in_feature_flags_endpoint(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);

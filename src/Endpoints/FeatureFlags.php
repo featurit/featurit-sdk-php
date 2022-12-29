@@ -5,6 +5,7 @@ namespace Featurit\Client\Endpoints;
 use Exception;
 use Featurit\Client\Featurit;
 use Featurit\Client\HttpClient\Message\ResponseMediator;
+use Featurit\Client\Modules\Segmentation\Services\Hydrators\FeatureFlagsHydrator;
 
 class FeatureFlags
 {
@@ -21,17 +22,23 @@ class FeatureFlags
      */
     public function all(): array
     {
-        $featuritUserContextArray = ['userCtx' => $this->featurit->getUserContext()->toArray()];
-        $featuritUserContextQuery = http_build_query($featuritUserContextArray);
+        $featuritUserContext = $this->featurit->getUserContext();
 
-        $cacheKey = "featureFlags_{$this->featurit->getApiKey()}_{$this->featurit->getUserContext()->getUserId()}";
+        $cacheKey = "featureFlags_{$this->featurit->getApiKey()}";
 
         if ($this->featurit->getCache()->has($cacheKey)) {
-            return $this->featurit->getCache()->get($cacheKey);
+            $featureFlagArrayResponse = $this->featurit->getCache()->get($cacheKey);
+
+            $featureFlags = (new FeatureFlagsHydrator())->hydrate($featureFlagArrayResponse);
+
+            return $this->featurit->getFeatureSegmentationService()->execute(
+                $featureFlags,
+                $featuritUserContext
+            );
         }
 
         $featureFlagsApiResponse = $this->featurit->getHttpClient()
-            ->get("/feature-flags?{$featuritUserContextQuery}");
+            ->get("/feature-flags");
 
         if ($featureFlagsApiResponse->getStatusCode() != 200) {
             throw new Exception("Url not found");
@@ -41,7 +48,12 @@ class FeatureFlags
 
         $this->featurit->getCache()->set($cacheKey, $featureFlagArrayResponse);
 
-        return $featureFlagArrayResponse;
+        $featureFlags = (new FeatureFlagsHydrator())->hydrate($featureFlagArrayResponse);
+
+        return $this->featurit->getFeatureSegmentationService()->execute(
+            $featureFlags,
+            $featuritUserContext
+        );
     }
 
     public function isActive($featureFlagName): bool
@@ -54,7 +66,7 @@ class FeatureFlags
                 return false;
             }
 
-            return $featureFlags[$featureFlagName];
+            return $featureFlags[$featureFlagName]->isActive();
         } catch (Exception | \Http\Client\Exception $exception) {
             // If the server couldn't be contacted, we should return the value on cache.
             // In this case, the cache couldn't be hit, maybe because it's expired or because
