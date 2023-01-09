@@ -2,11 +2,11 @@
 
 namespace Featurit\Client\Endpoints;
 
-use Exception;
 use Featurit\Client\Featurit;
 use Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException;
 use Featurit\Client\HttpClient\Exceptions\UnknownServerException;
 use Featurit\Client\HttpClient\Message\ResponseMediator;
+use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseVersions;
 use Featurit\Client\Modules\Segmentation\Services\Hydrators\FeatureFlagsHydrator;
 use Psr\SimpleCache\InvalidArgumentException;
 
@@ -88,15 +88,33 @@ class FeatureFlags
         }
     }
 
-    public function isActive($featureFlagName): bool
+    /**
+     * @throws InvalidApiKeyException
+     */
+    public function isActive(string $featureFlagName): bool
     {
         $featureFlags = $this->all();
 
-        // If you ask for an non-existing feature flag, it returns false by default
+        // If you ask for an non-existing feature flag, it returns false
         if (! array_key_exists($featureFlagName, $featureFlags)) {
             return false;
         }
 
         return $featureFlags[$featureFlagName]->isActive();
+    }
+
+    /**
+     * @throws InvalidApiKeyException
+     */
+    public function version(string $featureFlagName): string
+    {
+        $featureFlags = $this->all();
+
+        // If you ask for an non-existing feature flag, it returns 'default'
+        if (! array_key_exists($featureFlagName, $featureFlags)) {
+            return BaseVersions::DEFAULT;
+        }
+
+        return $featureFlags[$featureFlagName]->selectedFeatureFlagVersion()->name();
     }
 }

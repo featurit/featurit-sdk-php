@@ -51,9 +51,20 @@ class Featurit
         $this->featureSegmentationService = new FeatureSegmentationService();
     }
 
+    /**
+     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     */
     public function isActive(string $featureName): bool
     {
         return $this->featureFlags()->isActive($featureName);
+    }
+
+    /**
+     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     */
+    public function version(string $featureName): string
+    {
+        return $this->featureFlags()->version($featureName);
     }
 
     public function featureFlags(): FeatureFlags
@@ -162,6 +173,8 @@ class Featurit
         }
 
         $storage->getOptions()->setCacheDir($cacheDirName);
+
+        $storage->clearExpired();
 
         return new SimpleCacheDecorator($storage);
     }

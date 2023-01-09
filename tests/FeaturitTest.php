@@ -6,6 +6,10 @@ use ArgumentCountError;
 use Featurit\Client\Featurit;
 use Featurit\Client\HttpClient\ClientBuilder;
 use Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException;
+use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseVersions;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Http\Mock\Client;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\StreamFactory;
@@ -177,7 +181,7 @@ class FeaturitTest extends TestCase
         $this->assertTrue($featureFlagValue);
     }
 
-    public function test_is_active_shortcut_works_as_test_is_active_in_feature_flags_endpoint(): void
+    public function test_is_active_shortcut_works_as_is_active_in_feature_flags_endpoint(): void
     {
         $featurit = $this->getFeaturit(self::VALID_API_KEY);
 
@@ -187,12 +191,77 @@ class FeaturitTest extends TestCase
         $this->assertEquals($featureFlagValueShortcut, $featureFlagValueEndpoint);
     }
 
+    public function test_version_returns_false_if_feature_doesnt_exist(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $featureFlagVersion = $featurit->featureFlags()->version(self::NON_EXISTING_FEATURE_NAME);
+
+        $this->assertEquals(BaseVersions::DEFAULT, $featureFlagVersion);
+    }
+
+    public function test_version_returns_default_if_feature_doesnt_have_versions(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $featureFlagVersion = $featurit->featureFlags()->version(self::EXISTING_ACTIVE_FEATURE_NAME);
+
+        $this->assertEquals(BaseVersions::DEFAULT, $featureFlagVersion);
+    }
+
+    public function test_version_returns_properly_if_feature_has_versions_and_no_context_is_passed(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $featureFlagVersion = $featurit->featureFlags()->version(self::EXISTING_INACTIVE_FEATURE_NAME);
+
+        $this->assertEquals('v1', $featureFlagVersion);
+    }
+
+    public function test_version_returns_properly_if_feature_has_versions_and_some_context_is_passed(): void
+    {
+        $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+            new DefaultFeaturitUserContext('1235', null, null)
+        );
+
+        $featurit = $this->getFeaturit(self::VALID_API_KEY, 200, $featuritUserContextProvider);
+
+        $featureFlagVersion = $featurit->featureFlags()->version(self::EXISTING_INACTIVE_FEATURE_NAME);
+
+        $this->assertEquals('v1', $featureFlagVersion);
+
+        $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+            new DefaultFeaturitUserContext('1234', null, null)
+        );
+
+        $featurit = $this->getFeaturit(self::VALID_API_KEY, 200, $featuritUserContextProvider);
+
+        $featureFlagVersion = $featurit->featureFlags()->version(self::EXISTING_INACTIVE_FEATURE_NAME);
+
+        $this->assertEquals('v2', $featureFlagVersion);
+    }
+
+    public function test_version_shortcut_works_as_version_in_feature_flags_endpoint(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $featureFlagValueShortcut = $featurit->version(self::EXISTING_INACTIVE_FEATURE_NAME);
+        $featureFlagValueEndpoint = $featurit->featureFlags()->version(self::EXISTING_INACTIVE_FEATURE_NAME);
+
+        $this->assertEquals($featureFlagValueShortcut, $featureFlagValueEndpoint);
+    }
+
     /**
      * @param string $apiKey
      * @param int $status
+     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
      * @return Featurit
      */
-    private function getFeaturit(string $apiKey, int $status = 200): Featurit
+    private function getFeaturit(
+        string $apiKey,
+        int $status = 200,
+        FeaturitUserContextProvider $featuritUserContextProvider = null
+    ): Featurit
     {
         if ($apiKey !== self::VALID_API_KEY) {
             $status = 404;
@@ -208,7 +277,7 @@ class FeaturitTest extends TestCase
             self::TENANT_IDENTIFIER,
             $apiKey,
             5,
-            null,
+            $featuritUserContextProvider,
             null,
             $clientBuilder
         );

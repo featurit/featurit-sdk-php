@@ -2,7 +2,7 @@
 
 namespace Featurit\Client\Modules\Segmentation\Entities;
 
-use Featurit\Client\Modules\Segmentation\Entities\Attribute;
+use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseVersions;
 
 class FeatureFlag
 {
@@ -16,7 +16,7 @@ class FeatureFlag
     ) {
         if (is_null($this->selectedFeatureFlagVersion)) {
             $this->selectedFeatureFlagVersion = new FeatureFlagVersion(
-                'default',
+                BaseVersions::DEFAULT,
                 100
             );
         }
