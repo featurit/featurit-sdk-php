@@ -97,8 +97,14 @@ class FeatureFlags
 
         // If you ask for an non-existing feature flag, it returns false
         if (! array_key_exists($featureFlagName, $featureFlags)) {
+            // TODO: Should we send analytics here?
             return false;
         }
+
+        $this->featurit->getFeatureAnalyticsService()->registerFeatureFlagRequest(
+            $featureFlags[$featureFlagName],
+            $this->featurit->getUserContext()
+        );
 
         return $featureFlags[$featureFlagName]->isActive();
     }

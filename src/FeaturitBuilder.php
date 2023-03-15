@@ -11,10 +11,12 @@ use Psr\SimpleCache\CacheInterface;
 class FeaturitBuilder
 {
     public const DEFAULT_CACHE_TTL_MINUTES = 5;
+    public const DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES = 1;
 
     private string $tenantIdentifier;
     private string $apiKey;
     private int $cacheTtlMinutes = self::DEFAULT_CACHE_TTL_MINUTES;
+    private int $sendAnalyticsIntervalMinutes = self::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES;
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private CacheInterface $cache;
     private ClientBuilder $httpClientBuilder;
@@ -38,6 +40,13 @@ class FeaturitBuilder
     public function setCacheTtlMinutes(int $cacheTtlMinutes): FeaturitBuilder
     {
         $this->cacheTtlMinutes = $cacheTtlMinutes;
+
+        return $this;
+    }
+
+    public function setSendAnalyticsIntervalMinutes(int $sendAnalyticsIntervalMinutes): FeaturitBuilder
+    {
+        $this->sendAnalyticsIntervalMinutes = $sendAnalyticsIntervalMinutes;
 
         return $this;
     }
@@ -99,6 +108,7 @@ class FeaturitBuilder
             $this->httpClientBuilder ?? null,
             $this->uriFactory ?? null,
             $this->featuritUserContext ?? null,
+            $this->sendAnalyticsIntervalMinutes,
         );
     }
 }

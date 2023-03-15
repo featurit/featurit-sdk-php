@@ -109,8 +109,6 @@ class FeatureSegmentationService
             }
         }
 
-//        Log::debug("- No segment evaluated to true, so it's false");
-
         return false;
     }
 
@@ -138,16 +136,12 @@ class FeatureSegmentationService
 
         foreach ($featureFlagSegment->stringSegmentRules() as $stringSegmentRule) {
             if (! $this->evaluateSegmentRule(AttributeTypes::STRING, $stringSegmentRule, $featuritUserContext)) {
-//                Log::debug("- Rule {$stringSegmentRule->attribute()->name()} {$stringSegmentRule->operator()} {$stringSegmentRule->value()} is false");
-
                 return false;
             }
         }
 
         foreach ($featureFlagSegment->numberSegmentRules() as $numberSegmentRule) {
             if (! $this->evaluateSegmentRule(AttributeTypes::NUMBER, $numberSegmentRule, $featuritUserContext)) {
-//                Log::debug("- Rule {$numberSegmentRule->attribute()->name()} {$numberSegmentRule->operator()} {$numberSegmentRule->value()} is false");
-
                 return false;
             }
         }
@@ -173,8 +167,6 @@ class FeatureSegmentationService
         $operator = $segmentRule->operator();
         $segmentRuleAttributeValue = $segmentRule->value();
         $featuritUserContextAttributeValue = $featuritUserContext->getAttribute($attributeName);
-
-//        Log::debug("- Attribute name {$attributeName}, operator {$operator}, ruleValue {$segmentRuleAttributeValue}, userValue {$featuritUserContextAttributeValue}");
 
         return $this->attributeEvaluators[$attributeType]->evaluate(
             $featuritUserContextAttributeValue,

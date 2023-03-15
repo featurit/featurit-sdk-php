@@ -4,6 +4,8 @@ namespace Featurit\Client;
 
 use Featurit\Client\Endpoints\FeatureFlags;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Analytics\Services\AnalyticsSender;
+use Featurit\Client\Modules\Analytics\Services\FeatureAnalyticsService;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
@@ -24,9 +26,11 @@ class Featurit
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
+    private CacheInterface $analyticsCache;
     private CacheInterface $backupCache;
     private FeatureSegmentationService $featureSegmentationService;
     private LocalCacheFactory $localCacheFactory;
+    private FeatureAnalyticsService $featureAnalyticsService;
 
     public function __construct(
         string                          $tenantIdentifier,
@@ -37,6 +41,7 @@ class Featurit
         ClientBuilder                   $clientBuilder = null,
         UriFactory                      $uriFactory = null,
         FeaturitUserContext             $featuritUserContext = null,
+        int                             $sendAnalyticsIntervalMinutes = FeaturitBuilder::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES,
     ) {
         $this->tenantIdentifier = $tenantIdentifier;
         $this->apiKey = $apiKey;
@@ -50,10 +55,16 @@ class Featurit
         $this->setHttpClientBuilder($clientBuilder, $uriFactory);
 
         $this->featureSegmentationService = new FeatureSegmentationService();
+
+        $this->featureAnalyticsService = new FeatureAnalyticsService(
+            $this->getAnalyticsCache(),
+            new AnalyticsSender($this->getHttpClient()),
+            $sendAnalyticsIntervalMinutes
+        );
     }
 
     /**
-     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     * @throws Featurit\Client\Modules\Analytics\Exceptions\InvalidApiKeyException
      */
     public function isActive(string $featureName): bool
     {
@@ -61,7 +72,7 @@ class Featurit
     }
 
     /**
-     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     * @throws Featurit\Client\Modules\Analytics\Exceptions\InvalidApiKeyException
      */
     public function version(string $featureName): string
     {
@@ -88,6 +99,11 @@ class Featurit
         return $this->cache;
     }
 
+    public function getAnalyticsCache(): CacheInterface
+    {
+        return $this->analyticsCache;
+    }
+
     public function getBackupCache(): CacheInterface
     {
         return $this->backupCache;
@@ -108,6 +124,11 @@ class Featurit
         $this->setFeaturitUserContextProvider($featuritUserContext);
     }
 
+    public function getFeatureAnalyticsService(): FeatureAnalyticsService
+    {
+        return $this->featureAnalyticsService;
+    }
+
     /**
      * @param CacheInterface|null $cache
      * @param int $cacheTtlMinutes
@@ -119,9 +140,8 @@ class Featurit
             $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache' , true);
         }
 
-        /**
-         * Backup cache will be used when there's some problem with the FeaturIT API.
-         */
+        $this->analyticsCache = $this->localCacheFactory->setLocalCache(0, 'analytics', false);
+
         $this->backupCache = $this->localCacheFactory->setLocalCache(0, 'backup', false);
 
         $this->cache = $cache;
