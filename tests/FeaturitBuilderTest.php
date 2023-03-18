@@ -6,6 +6,7 @@ use Exception;
 use Featurit\Client\Featurit;
 use Featurit\Client\FeaturitBuilder;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
 use Laminas\Cache\Psr\SimpleCache\SimpleCacheDecorator;
 use Laminas\Cache\Storage\Adapter\Filesystem;
@@ -46,6 +47,7 @@ class FeaturitBuilderTest extends TestCase
             ->setFeaturitUserContextProvider(new DefaultFeaturitUserContextProvider())
             ->setCache(new SimpleCacheDecorator((new Filesystem())->addPlugin(new Serializer())))
             ->setHttpClientBuilder(new ClientBuilder())
+            ->setUserContext(new DefaultFeaturitUserContext(null, null, null))
             ->build();
 
         $this->assertInstanceOf(Featurit::class, $featurit);

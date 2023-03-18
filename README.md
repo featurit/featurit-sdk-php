@@ -33,18 +33,83 @@ If there's no package providing psr/simple-cache-implementation,
 visit https://packagist.org/providers/psr/simple-cache-implementation and choose the package
 that better suits your project.
 
-### Usage
+### Basic Usage
 
 ```
 $featurit = new \Featurit\Client\Featurit(
-    'your-tenant-subdomain', 
-    'your-environment-key'
+    'my-tenant-subdomain', 
+    'my-environment-key'
 );
 
-$isFeatureFlagActive = $featurit->isActive('YOUR_FEATURE_NAME');
+$isFeatureFlagActive = $featurit->isActive('MY_FEATURE_NAME');
 
 if ($isFeatureFlagActive) {
-    your_feature_code();
+    my_feature_code();
+}
+```
+
+### Segmentation Usage
+
+This is useful when you want to show different versions of your features
+to your users depending on certain attributes.
+
+```
+$featurit = new \Featurit\Client\Featurit(
+    'my-tenant-subdomain', 
+    'my-environment-key'
+);
+
+$userContext = new \Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext(
+    "1234",
+    "123af503",
+    "192.168.1.1",
+    [
+        "role" => "ADMIN",
+        "email" => "featurit.tech@gmail.com",
+    ] 
+);
+
+$featurit->setUserContext($userContext);
+
+$isFeatureFlagActive = $featurit->isActive('MY_FEATURE_NAME');
+
+if ($isFeatureFlagActive) {
+    $featureVersion = $featurit->version('MY_FEATURE_NAME');
+    
+    if ($featureVersion == 'v1') {
+        my_feature_v1_code();
+    } else if ($featureVersion == 'v2') {
+        my_feature_v2_code();
+    }
+}
+```
+
+### Creating a UserContextProvider
+
+In some cases you want to fill the UserContext data once and 
+forget about it when checking for feature flags.
+
+If that is your case you can implement your own UserContextProvider
+and pass it to the Featurit client constructor (we recommend using our builder 
+in order to create a new Featurit client).
+
+```
+class MyFeaturitUserContextProvider implements FeaturitUserContextProvider
+
+    public function getContext(): FeaturitUserContext
+    {
+        $contextData = get_my_context_data();
+        
+        return new DefaultFeaturitUserContext(
+            $contextData['userId'],
+            $contextData['sessionId'],
+            $contextData['ipAddress'],
+            [
+                "role" => $contextData['role'],
+                ...
+            ]
+        );
+    }
 }
 ```
 
@@ -54,4 +119,4 @@ FeaturIT
 
 https://www.featurit.com
 
-featurit_tech@gmail.com
+featurit.tech@gmail.com

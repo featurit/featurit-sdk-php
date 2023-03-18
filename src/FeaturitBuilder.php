@@ -3,6 +3,7 @@
 namespace Featurit\Client;
 
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Http\Message\UriFactory;
 use Psr\SimpleCache\CacheInterface;
@@ -18,6 +19,7 @@ class FeaturitBuilder
     private CacheInterface $cache;
     private ClientBuilder $httpClientBuilder;
     private UriFactory $uriFactory;
+    private FeaturitUserContext $featuritUserContext;
 
     public function setTenantIdentifier(string $tenantIdentifier): FeaturitBuilder
     {
@@ -68,6 +70,13 @@ class FeaturitBuilder
         return $this;
     }
 
+    public function setUserContext(FeaturitUserContext $featuritUserContext): FeaturitBuilder
+    {
+        $this->featuritUserContext = $featuritUserContext;
+
+        return $this;
+    }
+
     /**
      * @throws \Exception
      */
@@ -88,7 +97,8 @@ class FeaturitBuilder
             $this->featuritUserContextProvider ?? null,
             $this->cache ?? null,
             $this->httpClientBuilder ?? null,
-            $this->uriFactory ?? null
+            $this->uriFactory ?? null,
+            $this->featuritUserContext ?? null,
         );
     }
 }

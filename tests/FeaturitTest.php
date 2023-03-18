@@ -4,11 +4,13 @@ namespace Featurit\Client\Tests;
 
 use ArgumentCountError;
 use Featurit\Client\Featurit;
+use Featurit\Client\FeaturitBuilder;
 use Featurit\Client\HttpClient\ClientBuilder;
 use Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException;
 use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseVersions;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
+use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Http\Mock\Client;
 use Laminas\Diactoros\Response;
@@ -251,16 +253,50 @@ class FeaturitTest extends TestCase
         $this->assertEquals($featureFlagValueShortcut, $featureFlagValueEndpoint);
     }
 
+    public function test_passing_user_context_in_constructor_overrides_user_context_provider(): void
+    {
+        $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+            new DefaultFeaturitUserContext("1234", "12ab3cf", "127.0.0.1")
+        );
+
+        $featurit = $this->getFeaturit(
+            self::VALID_API_KEY,
+            200,
+            $featuritUserContextProvider,
+            new DefaultFeaturitUserContext("1357", null, null)
+        );
+
+        $this->assertEquals("1357", $featurit->getUserContext()->getUserId());
+    }
+
+    public function test_passing_user_context_in_setter_overrides_user_context_provider(): void
+    {
+        $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+            new DefaultFeaturitUserContext("1234", "12ab3cf", "127.0.0.1")
+        );
+
+        $featurit = $this->getFeaturit(self::VALID_API_KEY, 200, $featuritUserContextProvider);
+
+        $this->assertEquals("1234", $featurit->getUserContext()->getUserId());
+
+        $featurit->setUserContext(new DefaultFeaturitUserContext("1357", null, null));
+
+        $this->assertEquals("1357", $featurit->getUserContext()->getUserId());
+    }
+
     /**
      * @param string $apiKey
      * @param int $status
      * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @param FeaturitUserContext|null $featuritUserContext
      * @return Featurit
+     * @throws \Exception
      */
     private function getFeaturit(
         string $apiKey,
         int $status = 200,
-        FeaturitUserContextProvider $featuritUserContextProvider = null
+        FeaturitUserContextProvider $featuritUserContextProvider = null,
+        FeaturitUserContext $featuritUserContext = null,
     ): Featurit
     {
         if ($apiKey !== self::VALID_API_KEY) {
@@ -273,13 +309,20 @@ class FeaturitTest extends TestCase
         $client->setDefaultResponse($response);
         $clientBuilder = new ClientBuilder($client);
 
-        return new Featurit(
-            self::TENANT_IDENTIFIER,
-            $apiKey,
-            5,
-            $featuritUserContextProvider,
-            null,
-            $clientBuilder
-        );
+        $featuritBuilder = (new FeaturitBuilder())
+            ->setTenantIdentifier(self::TENANT_IDENTIFIER)
+            ->setApiKey($apiKey)
+            ->setCacheTtlMinutes(5)
+            ->setHttpClientBuilder($clientBuilder);
+
+        if (! is_null($featuritUserContextProvider)) {
+            $featuritBuilder->setFeaturitUserContextProvider($featuritUserContextProvider);
+        }
+
+        if (! is_null($featuritUserContext)) {
+            $featuritBuilder->setUserContext($featuritUserContext);
+        }
+
+        return $featuritBuilder->build();
     }
 }

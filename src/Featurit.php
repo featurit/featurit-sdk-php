@@ -4,6 +4,7 @@ namespace Featurit\Client;
 
 use Featurit\Client\Endpoints\FeatureFlags;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
@@ -37,12 +38,13 @@ class Featurit
         FeaturitUserContextProvider     $featuritUserContextProvider = null,
         CacheInterface                  $cache = null,
         ClientBuilder                   $clientBuilder = null,
-        UriFactory                      $uriFactory = null
+        UriFactory                      $uriFactory = null,
+        FeaturitUserContext             $featuritUserContext = null,
     ) {
         $this->tenantIdentifier = $tenantIdentifier;
         $this->apiKey = $apiKey;
 
-        $this->featuritUserContextProvider = $featuritUserContextProvider ?: new DefaultFeaturitUserContextProvider();
+        $this->setFeaturitUserContextProvider($featuritUserContext, $featuritUserContextProvider);
 
         $this->setCache($cache, $cacheTtlMinutes);
 
@@ -102,6 +104,11 @@ class Featurit
         return $this->featureSegmentationService;
     }
 
+    public function setUserContext(FeaturitUserContext $featuritUserContext): void
+    {
+        $this->setFeaturitUserContextProvider($featuritUserContext);
+    }
+
     /**
      * @param CacheInterface|null $cache
      * @param int $cacheTtlMinutes
@@ -146,6 +153,28 @@ class Featurit
                 ]
             )
         );
+    }
+
+    /**
+     * @param FeaturitUserContext|null $featuritUserContext
+     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @return void
+     */
+    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
+    {
+        if (! is_null($featuritUserContext)) {
+            $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+
+            return;
+        }
+
+        if (is_null($featuritUserContextProvider)) {
+            $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+                new DefaultFeaturitUserContext(null, null, null)
+            );
+        }
+
+        $this->featuritUserContextProvider = $featuritUserContextProvider;
     }
 
     /**
