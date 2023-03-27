@@ -304,6 +304,8 @@ class FeaturitTest extends TestCase
         $cachedDate = $featurit->getCache()->get("test_datetime_serdes");
 
         $this->assertEquals($date, $cachedDate);
+
+        $featurit->getCache()->delete("test_datetime_serdes");
     }
 
     public function test_that_cache_stores_analytics_bucket_properly(): void
@@ -313,11 +315,13 @@ class FeaturitTest extends TestCase
         $date = new \DateTime("2020-02-11");
         $analyticsBucket = new AnalyticsBucket($date);
 
-        $featurit->getCache()->set("test_analytics_bucket_serdes", $analyticsBucket);
+        $featurit->getBackupCache()->set("test_analytics_bucket_serdes", $analyticsBucket);
 
-        $cachedAnalyticsBucket = $featurit->getCache()->get("test_analytics_bucket_serdes");
+        $cachedAnalyticsBucket = $featurit->getBackupCache()->get("test_analytics_bucket_serdes");
 
         $this->assertEquals($analyticsBucket, $cachedAnalyticsBucket);
+
+        $featurit->getBackupCache()->delete("test_analytics_bucket_serdes");
     }
 
     /**
