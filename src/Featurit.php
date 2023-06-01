@@ -14,10 +14,6 @@ use Http\Client\Common\Plugin\BaseUriPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Message\UriFactory;
-use Laminas\Cache\Psr\SimpleCache\SimpleCacheDecorator;
-use Laminas\Cache\Storage\Adapter\Filesystem;
-use Laminas\Cache\Storage\Plugin\ExceptionHandler;
-use Laminas\Cache\Storage\Plugin\Serializer;
 use Psr\SimpleCache\CacheInterface;
 
 class Featurit
@@ -30,6 +26,7 @@ class Featurit
     private CacheInterface $cache;
     private CacheInterface $backupCache;
     private FeatureSegmentationService $featureSegmentationService;
+    private LocalCacheFactory $localCacheFactory;
 
     public function __construct(
         string                          $tenantIdentifier,
@@ -45,6 +42,8 @@ class Featurit
         $this->apiKey = $apiKey;
 
         $this->setFeaturitUserContextProvider($featuritUserContext, $featuritUserContextProvider);
+
+        $this->localCacheFactory = new LocalCacheFactory();
 
         $this->setCache($cache, $cacheTtlMinutes);
 
@@ -117,13 +116,13 @@ class Featurit
     private function setCache(?CacheInterface $cache, int $cacheTtlMinutes): void
     {
         if (is_null($cache)) {
-            $cache = $this->setLocalCache($cacheTtlMinutes);
+            $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache' , true);
         }
 
         /**
          * Backup cache will be used when there's some problem with the FeaturIT API.
          */
-        $this->backupCache = $this->setLocalCache(0);
+        $this->backupCache = $this->localCacheFactory->setLocalCache(0, 'backup', false);
 
         $this->cache = $cache;
     }
@@ -175,36 +174,5 @@ class Featurit
         }
 
         $this->featuritUserContextProvider = $featuritUserContextProvider;
-    }
-
-    /**
-     * @param int $cacheTtlMinutes
-     * @return CacheInterface
-     */
-    private function setLocalCache(int $cacheTtlMinutes): SimpleCacheDecorator
-    {
-        $storage = new Filesystem();
-
-        $plugin = new ExceptionHandler();
-        $plugin->getOptions()->setThrowExceptions(true);
-
-        $storage->addPlugin($plugin);
-
-        $plugin = new Serializer();
-        $storage->addPlugin($plugin);
-
-        $storage->getOptions()->setTtl($cacheTtlMinutes * 60);
-
-        $cacheDirName = join(DIRECTORY_SEPARATOR, [dirname(__FILE__), '..', 'cache']);
-
-        if (!file_exists($cacheDirName)) {
-            mkdir($cacheDirName, 0755, true);
-        }
-
-        $storage->getOptions()->setCacheDir($cacheDirName);
-
-        $storage->clearExpired();
-
-        return new SimpleCacheDecorator($storage);
     }
 }
