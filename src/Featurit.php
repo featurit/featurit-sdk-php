@@ -64,7 +64,7 @@ class Featurit
     }
 
     /**
-     * @throws Featurit\Client\Modules\Analytics\Exceptions\InvalidApiKeyException
+     * @throws \Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException
      */
     public function isActive(string $featureName): bool
     {
@@ -72,7 +72,7 @@ class Featurit
     }
 
     /**
-     * @throws Featurit\Client\Modules\Analytics\Exceptions\InvalidApiKeyException
+     * @throws \Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException
      */
     public function version(string $featureName): string
     {
