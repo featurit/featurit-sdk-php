@@ -8,7 +8,7 @@ use Psr\SimpleCache\CacheInterface;
 
 class LocalCacheFactoryTest extends TestCase
 {
-    const TEST_CACHE_DIR = "test";
+    const TEST_CACHE_DIR = "cache_test";
     private $testCacheDir = "";
 
     protected function setUp(): void

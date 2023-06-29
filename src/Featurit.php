@@ -4,6 +4,8 @@ namespace Featurit\Client;
 
 use Featurit\Client\Endpoints\FeatureFlags;
 use Featurit\Client\HttpClient\ClientBuilder;
+use Featurit\Client\Modules\Analytics\Services\AnalyticsSender;
+use Featurit\Client\Modules\Analytics\Services\FeatureAnalyticsService;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
@@ -21,12 +23,16 @@ class Featurit
     private string $tenantIdentifier;
     private string $apiKey;
 
+    private bool $isAnalyticsEnabled;
+
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
+    private CacheInterface $analyticsCache;
     private CacheInterface $backupCache;
     private FeatureSegmentationService $featureSegmentationService;
     private LocalCacheFactory $localCacheFactory;
+    private FeatureAnalyticsService $featureAnalyticsService;
 
     public function __construct(
         string                          $tenantIdentifier,
@@ -37,6 +43,8 @@ class Featurit
         ClientBuilder                   $clientBuilder = null,
         UriFactory                      $uriFactory = null,
         FeaturitUserContext             $featuritUserContext = null,
+        bool                            $enableAnalytics = false,
+        int                             $sendAnalyticsIntervalMinutes = FeaturitBuilder::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES,
     ) {
         $this->tenantIdentifier = $tenantIdentifier;
         $this->apiKey = $apiKey;
@@ -50,10 +58,12 @@ class Featurit
         $this->setHttpClientBuilder($clientBuilder, $uriFactory);
 
         $this->featureSegmentationService = new FeatureSegmentationService();
+
+        $this->setupAnalytics($enableAnalytics, $sendAnalyticsIntervalMinutes);
     }
 
     /**
-     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     * @throws \Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException
      */
     public function isActive(string $featureName): bool
     {
@@ -61,7 +71,7 @@ class Featurit
     }
 
     /**
-     * @throws HttpClient\Exceptions\InvalidApiKeyException
+     * @throws \Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException
      */
     public function version(string $featureName): string
     {
@@ -88,6 +98,11 @@ class Featurit
         return $this->cache;
     }
 
+    public function getAnalyticsCache(): CacheInterface
+    {
+        return $this->analyticsCache;
+    }
+
     public function getBackupCache(): CacheInterface
     {
         return $this->backupCache;
@@ -103,9 +118,41 @@ class Featurit
         return $this->featureSegmentationService;
     }
 
+    public function getFeatureAnalyticsService(): FeatureAnalyticsService
+    {
+        return $this->featureAnalyticsService;
+    }
+
+    public function isAnalyticsModuleEnabled(): bool
+    {
+        return $this->isAnalyticsEnabled;
+    }
+
     public function setUserContext(FeaturitUserContext $featuritUserContext): void
     {
         $this->setFeaturitUserContextProvider($featuritUserContext);
+    }
+
+    /**
+     * @param FeaturitUserContext|null $featuritUserContext
+     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @return void
+     */
+    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
+    {
+        if (! is_null($featuritUserContext)) {
+            $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+
+            return;
+        }
+
+        if (is_null($featuritUserContextProvider)) {
+            $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+                new DefaultFeaturitUserContext(null, null, null)
+            );
+        }
+
+        $this->featuritUserContextProvider = $featuritUserContextProvider;
     }
 
     /**
@@ -119,9 +166,8 @@ class Featurit
             $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache' , true);
         }
 
-        /**
-         * Backup cache will be used when there's some problem with the FeaturIT API.
-         */
+        $this->analyticsCache = $this->localCacheFactory->setLocalCache(0, 'analytics', false);
+
         $this->backupCache = $this->localCacheFactory->setLocalCache(0, 'backup', false);
 
         $this->cache = $cache;
@@ -155,24 +201,18 @@ class Featurit
     }
 
     /**
-     * @param FeaturitUserContext|null $featuritUserContext
-     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @param bool $enableAnalytics
+     * @param int $sendAnalyticsIntervalMinutes
      * @return void
      */
-    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
+    private function setupAnalytics(bool $enableAnalytics, int $sendAnalyticsIntervalMinutes): void
     {
-        if (! is_null($featuritUserContext)) {
-            $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+        $this->isAnalyticsEnabled = $enableAnalytics;
 
-            return;
-        }
-
-        if (is_null($featuritUserContextProvider)) {
-            $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
-                new DefaultFeaturitUserContext(null, null, null)
-            );
-        }
-
-        $this->featuritUserContextProvider = $featuritUserContextProvider;
+        $this->featureAnalyticsService = new FeatureAnalyticsService(
+            $this->getAnalyticsCache(),
+            new AnalyticsSender($this->getHttpClient()),
+            $sendAnalyticsIntervalMinutes
+        );
     }
 }

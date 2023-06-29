@@ -2,6 +2,7 @@
 
 namespace Featurit\Client\Tests\Modules\Segmentation;
 
+use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseAttributes;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use PHPUnit\Framework\TestCase;
 
@@ -93,17 +94,17 @@ class DefaultFeaturitUserContextTest extends TestCase
     public function test_it_converts_to_array(): void
     {
         $expectedArray = [
-            "userId" => 146,
-            "sessionId" => null,
-            "ipAddress" => "192.168.1.1",
+            BaseAttributes::USER_ID => 146,
+            BaseAttributes::SESSION_ID => null,
+            BaseAttributes::IP_ADDRESS => "192.168.1.1",
             "gender" => "Female",
             "description" => "I like trains",
         ];
 
         $defaultFeaturitUserContext = new DefaultFeaturitUserContext(
-            $expectedArray["userId"],
-            $expectedArray["sessionId"],
-            $expectedArray["ipAddress"],
+            $expectedArray[BaseAttributes::USER_ID],
+            $expectedArray[BaseAttributes::SESSION_ID],
+            $expectedArray[BaseAttributes::IP_ADDRESS],
             [
                 "gender" => $expectedArray["gender"],
                 "description" => $expectedArray["description"],
@@ -116,18 +117,18 @@ class DefaultFeaturitUserContextTest extends TestCase
     public function test_main_attributes_arent_overwritten_by_custom_attributes_when_it_converts_to_array(): void
     {
         $expectedArray = [
-            "userId" => "totoro@gmail.com",
-            "sessionId" => "a124s3243e12321",
-            "ipAddress" => "192.168.1.1",
+            BaseAttributes::USER_ID => "totoro@gmail.com",
+            BaseAttributes::SESSION_ID => "a124s3243e12321",
+            BaseAttributes::IP_ADDRESS => "192.168.1.1",
             "birth date" => "20/10/1999",
             "purchase_amount" => 979.23,
             "currency" => "EUR",
         ];
 
         $defaultFeaturitUserContext = new DefaultFeaturitUserContext(
-            $expectedArray["userId"],
-            $expectedArray["sessionId"],
-            $expectedArray["ipAddress"],
+            $expectedArray[BaseAttributes::USER_ID],
+            $expectedArray[BaseAttributes::SESSION_ID],
+            $expectedArray[BaseAttributes::IP_ADDRESS],
             $expectedArray
         );
 

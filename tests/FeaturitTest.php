@@ -7,6 +7,7 @@ use Featurit\Client\Featurit;
 use Featurit\Client\FeaturitBuilder;
 use Featurit\Client\HttpClient\ClientBuilder;
 use Featurit\Client\HttpClient\Exceptions\InvalidApiKeyException;
+use Featurit\Client\Modules\Analytics\AnalyticsBucket;
 use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseVersions;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
@@ -284,6 +285,45 @@ class FeaturitTest extends TestCase
         $this->assertEquals("1357", $featurit->getUserContext()->getUserId());
     }
 
+    public function test_that_cache_stores_dates_properly(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $date = new \DateTime("2020-02-11");
+
+        $featurit->getCache()->set("test_datetime_serdes", $date);
+
+        $cachedDate = $featurit->getCache()->get("test_datetime_serdes");
+
+        $this->assertEquals($date, $cachedDate);
+
+        $date = new \DateTime('now');
+
+        $featurit->getCache()->set("test_datetime_serdes", $date);
+
+        $cachedDate = $featurit->getCache()->get("test_datetime_serdes");
+
+        $this->assertEquals($date, $cachedDate);
+
+        $featurit->getCache()->delete("test_datetime_serdes");
+    }
+
+    public function test_that_cache_stores_analytics_bucket_properly(): void
+    {
+        $featurit = $this->getFeaturit(self::VALID_API_KEY);
+
+        $date = new \DateTime("2020-02-11");
+        $analyticsBucket = new AnalyticsBucket($date);
+
+        $featurit->getBackupCache()->set("test_analytics_bucket_serdes", $analyticsBucket);
+
+        $cachedAnalyticsBucket = $featurit->getBackupCache()->get("test_analytics_bucket_serdes");
+
+        $this->assertEquals($analyticsBucket, $cachedAnalyticsBucket);
+
+        $featurit->getBackupCache()->delete("test_analytics_bucket_serdes");
+    }
+
     /**
      * @param string $apiKey
      * @param int $status
@@ -312,7 +352,9 @@ class FeaturitTest extends TestCase
         $featuritBuilder = (new FeaturitBuilder())
             ->setTenantIdentifier(self::TENANT_IDENTIFIER)
             ->setApiKey($apiKey)
+            ->setIsAnalyticsModuleEnabled(true)
             ->setCacheTtlMinutes(5)
+            ->setSendAnalyticsIntervalMinutes(1)
             ->setHttpClientBuilder($clientBuilder);
 
         if (! is_null($featuritUserContextProvider)) {
