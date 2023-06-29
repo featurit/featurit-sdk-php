@@ -352,6 +352,7 @@ class FeaturitTest extends TestCase
         $featuritBuilder = (new FeaturitBuilder())
             ->setTenantIdentifier(self::TENANT_IDENTIFIER)
             ->setApiKey($apiKey)
+            ->setIsAnalyticsModuleEnabled(true)
             ->setCacheTtlMinutes(5)
             ->setSendAnalyticsIntervalMinutes(1)
             ->setHttpClientBuilder($clientBuilder);

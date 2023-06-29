@@ -23,6 +23,8 @@ class Featurit
     private string $tenantIdentifier;
     private string $apiKey;
 
+    private bool $isAnalyticsEnabled;
+
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
@@ -41,6 +43,7 @@ class Featurit
         ClientBuilder                   $clientBuilder = null,
         UriFactory                      $uriFactory = null,
         FeaturitUserContext             $featuritUserContext = null,
+        bool                            $enableAnalytics = false,
         int                             $sendAnalyticsIntervalMinutes = FeaturitBuilder::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES,
     ) {
         $this->tenantIdentifier = $tenantIdentifier;
@@ -56,11 +59,7 @@ class Featurit
 
         $this->featureSegmentationService = new FeatureSegmentationService();
 
-        $this->featureAnalyticsService = new FeatureAnalyticsService(
-            $this->getAnalyticsCache(),
-            new AnalyticsSender($this->getHttpClient()),
-            $sendAnalyticsIntervalMinutes
-        );
+        $this->setupAnalytics($enableAnalytics, $sendAnalyticsIntervalMinutes);
     }
 
     /**
@@ -119,14 +118,41 @@ class Featurit
         return $this->featureSegmentationService;
     }
 
+    public function getFeatureAnalyticsService(): FeatureAnalyticsService
+    {
+        return $this->featureAnalyticsService;
+    }
+
+    public function isAnalyticsModuleEnabled(): bool
+    {
+        return $this->isAnalyticsEnabled;
+    }
+
     public function setUserContext(FeaturitUserContext $featuritUserContext): void
     {
         $this->setFeaturitUserContextProvider($featuritUserContext);
     }
 
-    public function getFeatureAnalyticsService(): FeatureAnalyticsService
+    /**
+     * @param FeaturitUserContext|null $featuritUserContext
+     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @return void
+     */
+    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
     {
-        return $this->featureAnalyticsService;
+        if (! is_null($featuritUserContext)) {
+            $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+
+            return;
+        }
+
+        if (is_null($featuritUserContextProvider)) {
+            $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
+                new DefaultFeaturitUserContext(null, null, null)
+            );
+        }
+
+        $this->featuritUserContextProvider = $featuritUserContextProvider;
     }
 
     /**
@@ -175,24 +201,18 @@ class Featurit
     }
 
     /**
-     * @param FeaturitUserContext|null $featuritUserContext
-     * @param FeaturitUserContextProvider|null $featuritUserContextProvider
+     * @param bool $enableAnalytics
+     * @param int $sendAnalyticsIntervalMinutes
      * @return void
      */
-    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
+    private function setupAnalytics(bool $enableAnalytics, int $sendAnalyticsIntervalMinutes): void
     {
-        if (! is_null($featuritUserContext)) {
-            $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+        $this->isAnalyticsEnabled = $enableAnalytics;
 
-            return;
-        }
-
-        if (is_null($featuritUserContextProvider)) {
-            $featuritUserContextProvider = new DefaultFeaturitUserContextProvider(
-                new DefaultFeaturitUserContext(null, null, null)
-            );
-        }
-
-        $this->featuritUserContextProvider = $featuritUserContextProvider;
+        $this->featureAnalyticsService = new FeatureAnalyticsService(
+            $this->getAnalyticsCache(),
+            new AnalyticsSender($this->getHttpClient()),
+            $sendAnalyticsIntervalMinutes
+        );
     }
 }

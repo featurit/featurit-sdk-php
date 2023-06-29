@@ -27,11 +27,8 @@ class AnalyticsSender
             );
 
             if ($featureFlagsApiResponse->getStatusCode() != 200) {
-                dump("Response Status code: " . $featureFlagsApiResponse->getStatusCode());
                 throw new CantSendAnalyticsToServerException("Error sending Analytics to the API");
             }
-
-            dump("Request sent to the API");
         } catch (\Http\Client\Exception $exception) {
             throw new CantSendAnalyticsToServerException($exception->getMessage(), $exception->getCode(), $exception);
         }

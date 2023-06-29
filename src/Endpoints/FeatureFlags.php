@@ -101,10 +101,11 @@ class FeatureFlags
             return false;
         }
 
-        $this->featurit->getFeatureAnalyticsService()->registerFeatureFlagRequest(
-            $featureFlags[$featureFlagName],
-            $this->featurit->getUserContext()
-        );
+        if ($this->featurit->isAnalyticsModuleEnabled()) {
+            $this->featurit->getFeatureAnalyticsService()->registerFeatureFlagRequest(
+                $featureFlags[$featureFlagName]
+            );
+        }
 
         return $featureFlags[$featureFlagName]->isActive();
     }

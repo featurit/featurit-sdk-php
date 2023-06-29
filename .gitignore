@@ -1,7 +1,9 @@
 vendor
 .idea
-cache/*
-!cache/.gitkeep
+analytics/*
+!analytics/.gitkeep
 backup/*
 !backup/.gitkeep
+cache/*
+!cache/.gitkeep
 .phpunit*

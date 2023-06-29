@@ -15,6 +15,7 @@ class FeaturitBuilder
 
     private string $tenantIdentifier;
     private string $apiKey;
+    private bool $isAnalyticsModuleEnabled = false;
     private int $cacheTtlMinutes = self::DEFAULT_CACHE_TTL_MINUTES;
     private int $sendAnalyticsIntervalMinutes = self::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES;
     private FeaturitUserContextProvider $featuritUserContextProvider;
@@ -33,6 +34,13 @@ class FeaturitBuilder
     public function setApiKey(string $apiKey): FeaturitBuilder
     {
         $this->apiKey = $apiKey;
+
+        return $this;
+    }
+
+    public function setIsAnalyticsModuleEnabled(bool $isAnalyticsModuleEnabled): FeaturitBuilder
+    {
+        $this->isAnalyticsModuleEnabled = $isAnalyticsModuleEnabled;
 
         return $this;
     }
@@ -108,6 +116,7 @@ class FeaturitBuilder
             $this->httpClientBuilder ?? null,
             $this->uriFactory ?? null,
             $this->featuritUserContext ?? null,
+            $this->isAnalyticsModuleEnabled,
             $this->sendAnalyticsIntervalMinutes,
         );
     }

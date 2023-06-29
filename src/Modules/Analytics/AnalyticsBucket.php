@@ -5,9 +5,7 @@ namespace Featurit\Client\Modules\Analytics;
 use DateTime;
 use DateTimeInterface;
 use Exception;
-use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseAttributes;
 use Featurit\Client\Modules\Segmentation\Entities\FeatureFlag;
-use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use JsonSerializable;
 
 class AnalyticsBucket implements JsonSerializable
@@ -17,11 +15,13 @@ class AnalyticsBucket implements JsonSerializable
 
     /**
      * [
-     *   [
-     *     "timestamp",
-     *     "ctx" => ["userId", "sessionId", "ipAddress", "custom"],
-     *     "flag" => ["featureName", "featureVersion", "isActive"]
-     *   ]
+     *   "$hour" => [
+     *     "$featureName" => [
+     *       "$featureVersion" => [
+     *         "$isActive" => $count,
+     *       ],
+     *     ],
+     *   ],
      * ]
      * @var array
      */
@@ -46,40 +46,40 @@ class AnalyticsBucket implements JsonSerializable
 
     public function addFeatureFlagRequest(
         FeatureFlag $featureFlag,
-        FeaturitUserContext $featuritUserContext,
-        ?DateTimeInterface $insertionDateTime = null
+        DateTime $currentTime = null
     ): void
     {
         if ($this->isClosed()) {
             return;
         }
 
-        // Save the User Context.
-        $request["ctx"] = [
-            BaseAttributes::USER_ID => $featuritUserContext->getUserId(),
-            BaseAttributes::SESSION_ID => $featuritUserContext->getSessionId(),
-            BaseAttributes::IP_ADDRESS => $featuritUserContext->getIpAddress(),
-        ];
-
-        if (count($featuritUserContext->getCustomAttributes()) > 0) {
-            $request["ctx"]["custom"] = $featuritUserContext->getCustomAttributes();
+        if (is_null($currentTime)) {
+            $currentTime = new DateTime();
         }
 
-        // Save the Feature Flag.
-        $request["flag"] = [
-            "featureName" => $featureFlag->name(),
-            "featureVersion" => $featureFlag->selectedFeatureFlagVersion()->name(),
-            "isActive" => $featureFlag->isActive(),
-        ];
+        // Save the Feature Flag Request.
+        $hourKey = $this->generateHourKey($currentTime);
+        $flagNameKey = $this->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $this->generateFeatureFlagVersionKey($featureFlag);
+        $flagIsActiveKey = $this->generateFeatureFlagIsActiveKey($featureFlag);
 
-        // Save the request timestamp.
-        if (is_null($insertionDateTime)) {
-            $insertionDateTime = new DateTime();
+        if (!isset($this->requests["$hourKey"])) {
+            $this->requests["$hourKey"] = [];
         }
 
-        $request["timestamp"] = $insertionDateTime;
+        if (!isset($this->requests["$hourKey"]["$flagNameKey"])) {
+            $this->requests["$hourKey"]["$flagNameKey"] = [];
+        }
 
-        $this->requests[] = $request;
+        if (!isset($this->requests["$hourKey"]["$flagNameKey"]["$flagVersionKey"])) {
+            $this->requests["$hourKey"]["$flagNameKey"]["$flagVersionKey"] = [];
+        }
+
+        if (!isset($this->requests["$hourKey"]["$flagNameKey"]["$flagVersionKey"]["$flagIsActiveKey"])) {
+            $this->requests["$hourKey"]["$flagNameKey"]["$flagVersionKey"]["$flagIsActiveKey"] = 1;
+        } else {
+            $this->requests["$hourKey"]["$flagNameKey"]["$flagVersionKey"]["$flagIsActiveKey"]++;
+        }
     }
 
     public function openBucket(): void
@@ -124,5 +124,25 @@ class AnalyticsBucket implements JsonSerializable
             "end" => $this->endDateTime,
             "reqs" => $this->requests,
         ];
+    }
+
+    public function generateHourKey(DateTime $currentTime): string
+    {
+        return $currentTime->format("Y-m-d H:00:00");
+    }
+
+    public function generateFeatureFlagNameKey(FeatureFlag $featureFlag): string
+    {
+        return $featureFlag->name();
+    }
+
+    public function generateFeatureFlagVersionKey(FeatureFlag $featureFlag): string
+    {
+        return $featureFlag->selectedFeatureFlagVersion()->name();
+    }
+
+    public function generateFeatureFlagIsActiveKey(FeatureFlag $featureFlag): string
+    {
+        return $featureFlag->isActive() ? "t" : "f";
     }
 }

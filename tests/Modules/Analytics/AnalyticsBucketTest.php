@@ -6,76 +6,12 @@ use DateTime;
 use Exception;
 use Featurit\Client\Modules\Analytics\AnalyticsBucket;
 use Featurit\Client\Modules\Segmentation\ConstantCollections\BaseAttributes;
-use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\Entities\FeatureFlag;
 use Featurit\Client\Modules\Segmentation\Entities\FeatureFlagVersion;
 use PHPUnit\Framework\TestCase;
 
 class AnalyticsBucketTest extends TestCase
 {
-    public function test_new_data_cant_be_added_after_closing(): void
-    {
-        $startDateTime = new DateTime();
-        $bucket = new AnalyticsBucket($startDateTime);
-
-        $featuritUserContext = new DefaultFeaturitUserContext(
-            "1234",
-            "1357",
-            "192.168.1.1"
-        );
-
-        $featureFlag = new FeatureFlag(
-            "Test",
-            true,
-            BaseAttributes::USER_ID,
-            [],
-            []
-        );
-
-        $insertionTime1 = new DateTime();
-        $bucket->addFeatureFlagRequest($featureFlag, $featuritUserContext, $insertionTime1);
-
-        $endDateTime = new DateTime();
-        $bucket->closeBucket($endDateTime);
-
-        $insertionTime2 = new DateTime();
-        $bucket->addFeatureFlagRequest($featureFlag, $featuritUserContext, $insertionTime2);
-
-        $result = $bucket->jsonSerialize();
-
-        $expectedResult = [
-            "start" => $startDateTime,
-            "end" => $endDateTime,
-            "reqs" => [
-                [
-                    "ctx" => [
-                        BaseAttributes::USER_ID => $featuritUserContext->getUserId(),
-                        BaseAttributes::SESSION_ID => $featuritUserContext->getSessionId(),
-                        BaseAttributes::IP_ADDRESS => $featuritUserContext->getIpAddress(),
-                    ],
-                    "flag" => [
-                        "featureName" => $featureFlag->name(),
-                        "featureVersion" => $featureFlag->selectedFeatureFlagVersion()->name(),
-                        "isActive" => $featureFlag->isActive(),
-                    ],
-                    "timestamp" => $insertionTime1,
-                ],
-            ],
-        ];
-
-        $this->assertEquals($expectedResult, $result);
-    }
-
-    public function test_it_cant_be_serialized_if_not_closed(): void
-    {
-        $startDateTime = new DateTime();
-        $bucket = new AnalyticsBucket($startDateTime);
-
-        $this->expectException(Exception::class);
-
-        $bucket->jsonSerialize();
-    }
-
     public function test_it_serializes_properly_when_empty(): void
     {
         $startDateTime = new DateTime();
@@ -95,7 +31,17 @@ class AnalyticsBucketTest extends TestCase
         $this->assertEquals($expectedResult, $result);
     }
 
-    public function test_it_stores_one_request_properly(): void
+    public function test_it_cant_be_serialized_if_not_closed(): void
+    {
+        $startDateTime = new DateTime();
+        $bucket = new AnalyticsBucket($startDateTime);
+
+        $this->expectException(Exception::class);
+
+        $bucket->jsonSerialize();
+    }
+
+    public function test_it_stores_one_flag_properly(): void
     {
         $startDateTime = new DateTime();
         $bucket = new AnalyticsBucket($startDateTime);
@@ -108,39 +54,31 @@ class AnalyticsBucketTest extends TestCase
             []
         );
 
-        $featuritUserContext = new DefaultFeaturitUserContext(
-            "1234",
-            "1357",
-            "192.168.1.1"
-        );
-
-        $insertionDateTime = new DateTime();
-        $bucket->addFeatureFlagRequest($featureFlag, $featuritUserContext, $insertionDateTime);
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
 
         $endDateTime = new DateTime();
         $bucket->closeBucket($endDateTime);
 
+        $hour = $bucket->generateHourKey($startDateTime);
+        $flagNameKey = $bucket->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $bucket->generateFeatureFlagVersionKey($featureFlag);
+        $flagIsActiveKey = $bucket->generateFeatureFlagIsActiveKey($featureFlag);
+
         $result = $bucket->jsonSerialize();
         $expectedReqs = [
-            [
-                "ctx" => [
-                    BaseAttributes::USER_ID => $featuritUserContext->getUserId(),
-                    BaseAttributes::SESSION_ID => $featuritUserContext->getSessionId(),
-                    BaseAttributes::IP_ADDRESS => $featuritUserContext->getIpAddress(),
+            "$hour" => [
+                "$flagNameKey" => [
+                    "$flagVersionKey" => [
+                        "$flagIsActiveKey" => 1,
+                    ],
                 ],
-                "flag" => [
-                    "featureName" => $featureFlag->name(),
-                    "featureVersion" => $featureFlag->selectedFeatureFlagVersion()->name(),
-                    "isActive" => $featureFlag->isActive(),
-                ],
-                "timestamp" => $insertionDateTime,
             ],
         ];
 
         $this->assertEquals($expectedReqs, $result["reqs"]);
     }
 
-    public function test_it_stores_multiple_requests_properly(): void
+    public function test_it_stores_multiple_different_flags_properly(): void
     {
         $startDateTime = new DateTime();
         $bucket = new AnalyticsBucket($startDateTime);
@@ -153,21 +91,7 @@ class AnalyticsBucketTest extends TestCase
             []
         );
 
-        $featuritUserContext1 = new DefaultFeaturitUserContext(
-            "1234",
-            "1357",
-            "192.168.1.1"
-        );
-
-        $insertionDateTime1 = new DateTime();
-
-        $bucket->addFeatureFlagRequest($featureFlag1, $featuritUserContext1, $insertionDateTime1);
-
-        $featuritUserContext2 = new DefaultFeaturitUserContext(
-            "2468",
-            "1357",
-            "192.168.1.1"
-        );
+        $bucket->addFeatureFlagRequest($featureFlag1, $startDateTime);
 
         $featureFlag2 = new FeatureFlag(
             "Test2",
@@ -178,43 +102,211 @@ class AnalyticsBucketTest extends TestCase
             new FeatureFlagVersion("v1", 100)
         );
 
-        $insertionDateTime2 = new DateTime();
-
-        $bucket->addFeatureFlagRequest($featureFlag2, $featuritUserContext2, $insertionDateTime2);
+        $bucket->addFeatureFlagRequest($featureFlag2, $startDateTime);
 
         $endDateTime = new DateTime();
         $bucket->closeBucket($endDateTime);
 
+        $hour = $bucket->generateHourKey($startDateTime);
+        $flagNameKey1 = $bucket->generateFeatureFlagNameKey($featureFlag1);
+        $flagVersionKey1 = $bucket->generateFeatureFlagVersionKey($featureFlag1);
+        $flagIsActiveKey1 = $bucket->generateFeatureFlagIsActiveKey($featureFlag1);
+
+        $flagNameKey2 = $bucket->generateFeatureFlagNameKey($featureFlag2);
+        $flagVersionKey2 = $bucket->generateFeatureFlagVersionKey($featureFlag2);
+        $flagIsActiveKey2 = $bucket->generateFeatureFlagIsActiveKey($featureFlag2);
+
         $result = $bucket->jsonSerialize();
         $expectedReqs = [
-            [
-                "ctx" => [
-                    BaseAttributes::USER_ID => $featuritUserContext1->getUserId(),
-                    BaseAttributes::SESSION_ID => $featuritUserContext1->getSessionId(),
-                    BaseAttributes::IP_ADDRESS => $featuritUserContext1->getIpAddress(),
+            "$hour" => [
+                "$flagNameKey1" => [
+                    "$flagVersionKey1" => [
+                        "$flagIsActiveKey1" => 1,
+                    ],
                 ],
-                "flag" => [
-                    "featureName" => $featureFlag1->name(),
-                    "featureVersion" => $featureFlag1->selectedFeatureFlagVersion()->name(),
-                    "isActive" => $featureFlag1->isActive(),
+                "$flagNameKey2" => [
+                    "$flagVersionKey2" => [
+                        "$flagIsActiveKey2" => 1,
+                    ],
                 ],
-                "timestamp" => $insertionDateTime1,
-            ],
-            [
-                "ctx" => [
-                    BaseAttributes::USER_ID => $featuritUserContext2->getUserId(),
-                    BaseAttributes::SESSION_ID => $featuritUserContext2->getSessionId(),
-                    BaseAttributes::IP_ADDRESS => $featuritUserContext2->getIpAddress(),
-                ],
-                "flag" => [
-                    "featureName" => $featureFlag2->name(),
-                    "featureVersion" => $featureFlag2->selectedFeatureFlagVersion()->name(),
-                    "isActive" => $featureFlag2->isActive(),
-                ],
-                "timestamp" => $insertionDateTime2,
             ],
         ];
 
         $this->assertEquals($expectedReqs, $result["reqs"]);
+    }
+
+    public function test_it_stores_multiple_equal_flags_properly(): void
+    {
+        $startDateTime = new DateTime();
+        $bucket = new AnalyticsBucket($startDateTime);
+
+        $featureFlag = new FeatureFlag(
+            "Test",
+            true,
+            BaseAttributes::USER_ID,
+            [],
+            []
+        );
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $endDateTime = new DateTime();
+        $bucket->closeBucket($endDateTime);
+
+        $hour = $bucket->generateHourKey($startDateTime);
+        $flagNameKey = $bucket->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $bucket->generateFeatureFlagVersionKey($featureFlag);
+        $flagIsActiveKey = $bucket->generateFeatureFlagIsActiveKey($featureFlag);
+
+        $result = $bucket->jsonSerialize();
+        $expectedReqs = [
+            "$hour" => [
+                "$flagNameKey" => [
+                    "$flagVersionKey" => [
+                        "$flagIsActiveKey" => 2,
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedReqs, $result["reqs"]);
+    }
+
+    public function test_it_stores_multiple_equal_flags_with_different_active_values_properly(): void
+    {
+        $startDateTime = new DateTime();
+        $bucket = new AnalyticsBucket($startDateTime);
+
+        $featureFlag = new FeatureFlag(
+            "Test",
+            true,
+            BaseAttributes::USER_ID,
+            [],
+            []
+        );
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $featureFlag = new FeatureFlag(
+            "Test",
+            false,
+            BaseAttributes::USER_ID,
+            [],
+            []
+        );
+
+        $bucket->addFeatureFlagRequest($featureFlag);
+
+        $endDateTime = new DateTime();
+        $bucket->closeBucket($endDateTime);
+
+        $hour = $bucket->generateHourKey($startDateTime);
+        $flagNameKey = $bucket->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $bucket->generateFeatureFlagVersionKey($featureFlag);
+
+        $result = $bucket->jsonSerialize();
+        $expectedReqs = [
+            "$hour" => [
+                "$flagNameKey" => [
+                    "$flagVersionKey" => [
+                        "t" => 1,
+                        "f" => 1,
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedReqs, $result["reqs"]);
+    }
+
+    public function test_it_stores_multiple_equal_flags_with_different_insertion_hour_in_different_keys(): void
+    {
+        $startDateTime = new DateTime("2023-06-06 11:54:48");
+        $bucket = new AnalyticsBucket($startDateTime);
+
+        $featureFlag = new FeatureFlag(
+            "Test",
+            true,
+            BaseAttributes::USER_ID,
+            [],
+            []
+        );
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $endDateTime = new DateTime("2023-06-06 12:00:01");
+        $bucket->addFeatureFlagRequest($featureFlag, $endDateTime);
+
+        $bucket->closeBucket($endDateTime);
+
+        $hour1 = $bucket->generateHourKey($startDateTime);
+        $hour2 = $bucket->generateHourKey($endDateTime);
+        $flagNameKey = $bucket->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $bucket->generateFeatureFlagVersionKey($featureFlag);
+
+        $result = $bucket->jsonSerialize();
+        $expectedReqs = [
+            "$hour1" => [
+                "$flagNameKey" => [
+                    "$flagVersionKey" => [
+                        "t" => 1,
+                    ],
+                ],
+            ],
+            "$hour2" => [
+                "$flagNameKey" => [
+                    "$flagVersionKey" => [
+                        "t" => 1,
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedReqs, $result["reqs"]);
+    }
+
+    public function test_new_data_cant_be_added_after_closing(): void
+    {
+        $startDateTime = new DateTime();
+        $bucket = new AnalyticsBucket($startDateTime);
+
+        $featureFlag = new FeatureFlag(
+            "Test",
+            true,
+            BaseAttributes::USER_ID,
+            [],
+            []
+        );
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $endDateTime = new DateTime();
+        $bucket->closeBucket($endDateTime);
+
+        $bucket->addFeatureFlagRequest($featureFlag, $startDateTime);
+
+        $hour = $bucket->generateHourKey($startDateTime);
+        $flagNameKey = $bucket->generateFeatureFlagNameKey($featureFlag);
+        $flagVersionKey = $bucket->generateFeatureFlagVersionKey($featureFlag);
+        $flagIsActiveKey = $bucket->generateFeatureFlagIsActiveKey($featureFlag);
+
+        $result = $bucket->jsonSerialize();
+        $expectedResult = [
+            "start" => $startDateTime,
+            "end" => $endDateTime,
+            "reqs" => [
+                "$hour" => [
+                    "$flagNameKey" => [
+                        "$flagVersionKey" => [
+                            "$flagIsActiveKey" => 1,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedResult, $result);
     }
 }
