@@ -19,7 +19,7 @@ class FeatureAnalyticsServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->testCacheDir = join(DIRECTORY_SEPARATOR, [dirname(__FILE__), '..', self::TEST_CACHE_DIR]);
+        $this->testCacheDir = join(DIRECTORY_SEPARATOR, [dirname(__FILE__), '..', '..', '..', '..', self::TEST_CACHE_DIR]);
     }
 
     protected function tearDown(): void
@@ -119,60 +119,4 @@ class FeatureAnalyticsServiceTest extends TestCase
 
         $this->assertTrue(true);
     }
-
-//    public function test_it_works_properly_indefinitely(): void
-//    {
-//        $cacheFactory = new LocalCacheFactory();
-//
-//        $clientBuilder = new ClientBuilder();
-//        $uriFactory = Psr17FactoryDiscovery::findUriFactory();
-//
-//        $tenantIdentifier = 'test';
-//        $apiKey = '5b436559-e1d0-44be-96a3-65c716950c99';
-//
-//        $clientBuilder->addPlugin(
-//            new BaseUriPlugin(
-////                $uriFactory->createUri("https://{$tenantIdentifier}.featurit.com/api/v1/{$apiKey}")
-//                $uriFactory->createUri("http://{$tenantIdentifier}.localhost/api/v1/{$apiKey}")
-//            )
-//        );
-//
-//        $clientBuilder->addPlugin(
-//            new HeaderDefaultsPlugin(
-//                [
-//                    'User-Agent' => 'FeaturIT',
-//                    'Content-Type' => 'application/json',
-//                    'Accept' => 'application/json',
-//                ]
-//            )
-//        );
-//
-//        $analyticsService = new FeatureAnalyticsService(
-//            $cacheFactory->setLocalCache(0, self::TEST_CACHE_DIR, false),
-//            new AnalyticsSender($clientBuilder->getHttpClient()),
-//            1
-//        );
-//
-//        while (true) {
-//            $featureFlag = new FeatureFlag(
-//                'Feat' . rand(0, 100),
-//                rand(0, 1) == 0,
-//                BaseAttributes::USER_ID,
-//                [],
-//                [],
-//                new FeatureFlagVersion(
-//                    'v' . rand(0, 5),
-//                    100
-//                )
-//            );
-//
-//            $analyticsService->registerFeatureFlagRequest(
-//                $featureFlag
-//            );
-//
-//            usleep(10);
-//        }
-//
-//        $this->assertTrue(true);
-//    }
 }
