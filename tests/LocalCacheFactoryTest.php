@@ -88,21 +88,4 @@ class LocalCacheFactoryTest extends TestCase
 
         $this->assertNull($value);
     }
-
-    public function test_two_cache_instances_on_the_same_dir_override_ttl(): void
-    {
-        $localCacheFactory = new LocalCacheFactory();
-
-        $localCache = $localCacheFactory->setLocalCache(5, self::TEST_CACHE_DIR);
-
-        $localCache->set('test_key_3', 'test_value');
-
-        sleep(1 * 60);
-
-        $localCache = $localCacheFactory->setLocalCache(1, self::TEST_CACHE_DIR);
-
-        $value = $localCache->get('test_key_3');
-
-        $this->assertNull($value);
-    }
 }

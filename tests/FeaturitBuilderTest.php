@@ -8,10 +8,9 @@ use Featurit\Client\FeaturitBuilder;
 use Featurit\Client\HttpClient\ClientBuilder;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
-use Laminas\Cache\Psr\SimpleCache\SimpleCacheDecorator;
-use Laminas\Cache\Storage\Adapter\Filesystem;
-use Laminas\Cache\Storage\Plugin\Serializer;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 class FeaturitBuilderTest extends TestCase
 {
@@ -45,7 +44,7 @@ class FeaturitBuilderTest extends TestCase
             ->setApiKey(self::VALID_API_KEY)
             ->setCacheTtlMinutes(self::CACHE_TTL_MINUTES)
             ->setFeaturitUserContextProvider(new DefaultFeaturitUserContextProvider())
-            ->setCache(new SimpleCacheDecorator((new Filesystem())->addPlugin(new Serializer())))
+            ->setCache(new Psr16Cache(new FilesystemAdapter()))
             ->setHttpClientBuilder(new ClientBuilder())
             ->setUserContext(new DefaultFeaturitUserContext(null, null, null))
             ->build();
