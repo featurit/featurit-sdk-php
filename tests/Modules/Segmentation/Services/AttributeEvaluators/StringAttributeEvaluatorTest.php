@@ -75,6 +75,28 @@ class StringAttributeEvaluatorTest extends TestCase
     }
 
     /**
+     * Is contained in.
+     *
+     * @return void
+     */
+    public function test_is_contained_in_operator(): void
+    {
+        $stringAttributeEvaluator = new StringAttributeEvaluator();
+
+        $this->assertTrue($stringAttributeEvaluator->evaluate(
+            'CHAIR',
+            StringOperators::IS_CONTAINED_IN,
+            'APPLE,LEMON,CHAIR'
+        ));
+
+        $this->assertFalse($stringAttributeEvaluator->evaluate(
+            'email@no-reply.com',
+            StringOperators::IS_CONTAINED_IN,
+            'email@gmail.com,email@twitter.com,hello@outlook.com'
+        ));
+    }
+
+    /**
      * Starts with.
      *
      * @return void

@@ -7,6 +7,7 @@ class StringOperators implements ConstantCollection
     const EQUALS = 'EQUALS';
     const NOT_EQUALS = 'NOT_EQUALS';
     const CONTAINS = 'CONTAINS';
+    const IS_CONTAINED_IN = 'IS_CONTAINED_IN';
     const STARTS_WITH = 'STARTS_WITH';
     const ENDS_WITH = 'ENDS_WITH';
 
@@ -16,6 +17,7 @@ class StringOperators implements ConstantCollection
             self::EQUALS,
             self::NOT_EQUALS,
             self::CONTAINS,
+            self::IS_CONTAINED_IN,
             self::STARTS_WITH,
             self::ENDS_WITH,
         ];
