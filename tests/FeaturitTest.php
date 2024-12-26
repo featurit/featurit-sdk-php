@@ -355,6 +355,7 @@ class FeaturitTest extends TestCase
             ->setIsAnalyticsModuleEnabled(true)
             ->setCacheTtlMinutes(5)
             ->setSendAnalyticsIntervalMinutes(1)
+            ->setIsTrackingModuleEnabled(true)
             ->setHttpClientBuilder($clientBuilder);
 
         if (! is_null($featuritUserContextProvider)) {

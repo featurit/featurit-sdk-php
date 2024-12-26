@@ -20,6 +20,7 @@ class FeaturitBuilderTest extends TestCase
     const VALID_API_KEY = "e39e2919-13ca-4a14-1739-ecdf32d51dba";
 
     const CACHE_TTL_MINUTES = 1;
+    const ANALYTICS_INTERVAL_MINUTES = 5;
 
     /**
      * @throws Exception
@@ -47,6 +48,9 @@ class FeaturitBuilderTest extends TestCase
             ->setCache(new Psr16Cache(new FilesystemAdapter()))
             ->setHttpClientBuilder(new ClientBuilder())
             ->setUserContext(new DefaultFeaturitUserContext(null, null, null))
+            ->setIsAnalyticsModuleEnabled(true)
+            ->setSendAnalyticsIntervalMinutes(self::ANALYTICS_INTERVAL_MINUTES)
+            ->setIsTrackingModuleEnabled(true)
             ->build();
 
         $this->assertInstanceOf(Featurit::class, $featurit);

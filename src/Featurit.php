@@ -11,6 +11,8 @@ use Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContext;
 use Featurit\Client\Modules\Segmentation\FeaturitUserContextProvider;
 use Featurit\Client\Modules\Segmentation\Services\FeatureSegmentationService;
+use Featurit\Client\Modules\Tracking\Services\EventTrackingService;
+use Featurit\Client\Modules\Tracking\Services\TrackingEventsSender;
 use Http\Client\Common\HttpMethodsClientInterface;
 use Http\Client\Common\Plugin\BaseUriPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
@@ -24,6 +26,7 @@ class Featurit
     private string $apiKey;
 
     private bool $isAnalyticsEnabled;
+    private bool $isEventTrackingEnabled;
 
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
@@ -33,23 +36,24 @@ class Featurit
     private FeatureSegmentationService $featureSegmentationService;
     private LocalCacheFactory $localCacheFactory;
     private FeatureAnalyticsService $featureAnalyticsService;
+    private EventTrackingService $eventTrackingService;
 
     public function __construct(
-        string                          $tenantIdentifier,
-        string                          $apiKey,
-        int                             $cacheTtlMinutes = FeaturitBuilder::DEFAULT_CACHE_TTL_MINUTES,
-        FeaturitUserContextProvider     $featuritUserContextProvider = null,
-        CacheInterface                  $cache = null,
-        ClientBuilder                   $clientBuilder = null,
-        UriFactory                      $uriFactory = null,
-        FeaturitUserContext             $featuritUserContext = null,
-        bool                            $enableAnalytics = false,
-        int                             $sendAnalyticsIntervalMinutes = FeaturitBuilder::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES,
-    ) {
+        string                      $tenantIdentifier,
+        string                      $apiKey,
+        int                         $cacheTtlMinutes = FeaturitBuilder::DEFAULT_CACHE_TTL_MINUTES,
+        FeaturitUserContextProvider $featuritUserContextProvider = null,
+        CacheInterface              $cache = null,
+        ClientBuilder               $clientBuilder = null,
+        UriFactory                  $uriFactory = null,
+        FeaturitUserContext         $featuritUserContext = null,
+        bool                        $enableAnalytics = false,
+        int                         $sendAnalyticsIntervalMinutes = FeaturitBuilder::DEFAULT_SEND_ANALYTICS_INTERVAL_MINUTES,
+        bool                        $enableEventTracking = false,
+    )
+    {
         $this->tenantIdentifier = $tenantIdentifier;
         $this->apiKey = $apiKey;
-
-        $this->setFeaturitUserContextProvider($featuritUserContext, $featuritUserContextProvider);
 
         $this->localCacheFactory = new LocalCacheFactory();
 
@@ -60,6 +64,10 @@ class Featurit
         $this->featureSegmentationService = new FeatureSegmentationService();
 
         $this->setupAnalytics($enableAnalytics, $sendAnalyticsIntervalMinutes);
+
+        $this->setupEventTracking($enableEventTracking);
+
+        $this->setFeaturitUserContextProvider($featuritUserContext, $featuritUserContextProvider);
     }
 
     /**
@@ -76,6 +84,32 @@ class Featurit
     public function version(string $featureName): string
     {
         return $this->featureFlags()->version($featureName);
+    }
+
+    /**
+     * @param string $eventName
+     * @param array $properties
+     * @return void
+     */
+    public function track(string $eventName, array $properties): void
+    {
+        if (!$this->isEventTrackingEnabled) {
+            return;
+        }
+
+        $this->eventTrackingService->track($eventName, $properties);
+    }
+
+    /**
+     * @return void
+     */
+    public function flush(): void
+    {
+        if (!$this->isEventTrackingEnabled) {
+            return;
+        }
+
+        $this->eventTrackingService->flush();
     }
 
     public function featureFlags(): FeatureFlags
@@ -138,10 +172,17 @@ class Featurit
      * @param FeaturitUserContextProvider|null $featuritUserContextProvider
      * @return void
      */
-    public function setFeaturitUserContextProvider(?FeaturitUserContext $featuritUserContext = null, ?FeaturitUserContextProvider $featuritUserContextProvider = null): void
+    public function setFeaturitUserContextProvider(
+        ?FeaturitUserContext $featuritUserContext = null,
+        ?FeaturitUserContextProvider $featuritUserContextProvider = null
+    ): void
     {
-        if (! is_null($featuritUserContext)) {
+        if (!is_null($featuritUserContext)) {
             $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
+
+            if ($this->isEventTrackingEnabled) {
+                $this->eventTrackingService->addPeople($featuritUserContext);
+            }
 
             return;
         }
@@ -153,6 +194,10 @@ class Featurit
         }
 
         $this->featuritUserContextProvider = $featuritUserContextProvider;
+
+        if ($this->isEventTrackingEnabled) {
+            $this->eventTrackingService->addPeople($featuritUserContextProvider->getUserContext());
+        }
     }
 
     /**
@@ -163,7 +208,7 @@ class Featurit
     private function setCache(?CacheInterface $cache, int $cacheTtlMinutes): void
     {
         if (is_null($cache)) {
-            $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache' , true);
+            $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache', true);
         }
 
         $this->analyticsCache = $this->localCacheFactory->setLocalCache(0, 'analytics', false);
@@ -214,5 +259,21 @@ class Featurit
             new AnalyticsSender($this->getHttpClient()),
             $sendAnalyticsIntervalMinutes
         );
+    }
+
+    /**
+     * @param bool $enableEventTracking
+     * @return void
+     */
+    private function setupEventTracking(bool $enableEventTracking): void
+    {
+        $this->isEventTrackingEnabled = $enableEventTracking;
+
+        $this->eventTrackingService = new EventTrackingService(
+            new TrackingEventsSender($this->getHttpClient()),
+            $this->isEventTrackingEnabled
+        );
+
+        $this->eventTrackingService->register("token", $this->getApiKey());
     }
 }
