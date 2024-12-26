@@ -91,11 +91,16 @@ class EventTrackingService
         while ($remainingAttempts > 0) {
             try {
                 // TODO: Improve batching strategy (can grow too big)
-                $this->trackingEventsSender->sendTrackingEvents($this->events);
-                $this->events = [];
+                if (count($this->events) > 0) {
+                    $this->trackingEventsSender->sendTrackingEvents($this->events);
+                    $this->events = [];
+                }
 
-                $this->trackingEventsSender->sendPeople($this->people);
-                $this->people = [];
+                if (count($this->people) > 0) {
+                    $this->trackingEventsSender->sendPeople($this->people);
+                    $this->people = [];
+                }
+
                 return;
             } catch (CantSendTrackingEventsToServerException|CantSendPeopleToServerException $exception) {
 

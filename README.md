@@ -60,12 +60,12 @@ $featurit = new \Featurit\Client\Featurit(
 );
 
 $userContext = new \Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext(
-    "1234",
-    "123af503",
-    "192.168.1.1",
+    '1234',
+    '123af503',
+    '192.168.1.1',
     [
-        "role" => "ADMIN",
-        "email" => "featurit.tech@gmail.com",
+        'role' => 'ADMIN',
+        'email' => 'featurit.tech@gmail.com',
     ] 
 );
 
@@ -105,12 +105,49 @@ class MyFeaturitUserContextProvider implements FeaturitUserContextProvider
             $contextData['sessionId'],
             $contextData['ipAddress'],
             [
-                "role" => $contextData['role'],
+                'role' => $contextData['role'],
                 ...
             ]
         );
     }
 }
+```
+
+### Event Tracking
+
+In order to track some event in your application, you can add this once the event has happened:
+
+```
+$featurit = new \Featurit\Client\Featurit(
+    'my-tenant-subdomain', 
+    'my-environment-key'
+);
+
+$userContext = new \Featurit\Client\Modules\Segmentation\DefaultFeaturitUserContext(
+    '1234',
+    '123af503',
+    '192.168.1.1',
+    [
+        'role' => 'ADMIN',
+        'email' => 'featurit.tech@gmail.com',
+    ] 
+);
+
+$featurit->setUserContext($userContext);
+
+// Just by setting the user context, a new Person will be tracked.
+
+$featurit->track('MY_EVENT_NAME', [
+    'a_property_name' => 'a_property_value',
+    'another_property_name' => 'another_property_value',
+]);
+```
+
+All the events you track in the same request will be accumulated and associated to the current
+FeaturitUserContext, if for some reason you want to send the event immediately, you can do as follows:
+
+```
+$featurit->flush();
 ```
 
 ### Authors
