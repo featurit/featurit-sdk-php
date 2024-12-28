@@ -135,7 +135,9 @@ $userContext = new \Featurit\Client\Modules\Segmentation\DefaultFeaturitUserCont
 
 $featurit->setUserContext($userContext);
 
-// Just by setting the user context, a new Person will be tracked.
+$featurit->trackPerson();
+
+// trackPerson will track a new Person with the data set in the FeaturitUserContext.
 
 $featurit->track('MY_EVENT_NAME', [
     'a_property_name' => 'a_property_value',
@@ -143,8 +145,8 @@ $featurit->track('MY_EVENT_NAME', [
 ]);
 ```
 
-All the events you track in the same request will be accumulated and associated to the current
-FeaturitUserContext, if for some reason you want to send the event immediately, you can do as follows:
+All the events and people you track in the same request will be accumulated and associated to the current
+FeaturitUserContext, if for some reason you want to send the data immediately, you can do as follows:
 
 ```
 $featurit->flush();

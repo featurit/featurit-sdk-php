@@ -103,6 +103,18 @@ class Featurit
     /**
      * @return void
      */
+    public function trackPerson(): void
+    {
+        if (!$this->isEventTrackingEnabled) {
+            return;
+        }
+
+        $this->eventTrackingService->addPerson($this->getUserContext());
+    }
+
+    /**
+     * @return void
+     */
     public function flush(): void
     {
         if (!$this->isEventTrackingEnabled) {
@@ -179,11 +191,6 @@ class Featurit
     {
         if (!is_null($featuritUserContext)) {
             $this->featuritUserContextProvider = new DefaultFeaturitUserContextProvider($featuritUserContext);
-
-            if ($this->isEventTrackingEnabled) {
-                $this->eventTrackingService->addPeople($featuritUserContext);
-            }
-
             return;
         }
 
@@ -194,10 +201,6 @@ class Featurit
         }
 
         $this->featuritUserContextProvider = $featuritUserContextProvider;
-
-        if ($this->isEventTrackingEnabled) {
-            $this->eventTrackingService->addPeople($featuritUserContextProvider->getUserContext());
-        }
     }
 
     /**

@@ -15,7 +15,7 @@ class EventTrackingServiceTest extends TestCase
         $mockTrackEventsSender->expects($this->never())->method("sendTrackingEvents");
 
         $eventTrackingService = new EventTrackingService($mockTrackEventsSender, true);
-        $eventTrackingService->addPeople(
+        $eventTrackingService->addPerson(
             new DefaultFeaturitUserContext("aaa", "b23", "0.0.0.0")
         );
     }
@@ -50,7 +50,7 @@ class EventTrackingServiceTest extends TestCase
 
         $eventTrackingService = new EventTrackingService($mockTrackEventsSender, true);
 
-        $eventTrackingService->addPeople(
+        $eventTrackingService->addPerson(
             new DefaultFeaturitUserContext("123", "666", "192.168.0.9")
         );
     }

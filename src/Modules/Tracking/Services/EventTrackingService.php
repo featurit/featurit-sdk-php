@@ -58,7 +58,7 @@ class EventTrackingService
         $this->globalProperties[$propertyName] = $value;
     }
 
-    public function addPeople(FeaturitUserContext $featuritUserContext): void
+    public function addPerson(FeaturitUserContext $featuritUserContext): void
     {
         if (!$this->isEventTrackingEnabled) {
             return;
