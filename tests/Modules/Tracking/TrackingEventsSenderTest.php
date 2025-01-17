@@ -11,6 +11,10 @@ use PHPUnit\Framework\TestCase;
 
 class TrackingEventsSenderTest extends TestCase
 {
+    /**
+     * @throws CantSendTrackingEventsToServerException
+     * @throws CantSendPeopleToServerException
+     */
     public function test_it_can_send_a_simple_request(): void
     {
         $mockHttpMethodsClient = $this->createMock(HttpMethodsClientInterface::class);

@@ -28,6 +28,8 @@ class Featurit
     private bool $isAnalyticsEnabled;
     private bool $isEventTrackingEnabled;
 
+    private int $cacheTtlMinutes;
+
     private FeaturitUserContextProvider $featuritUserContextProvider;
     private ClientBuilder $clientBuilder;
     private CacheInterface $cache;
@@ -101,6 +103,20 @@ class Featurit
     }
 
     /**
+     * @param string $propertyName
+     * @param mixed $propertyValue
+     * @return void
+     */
+    public function register(string $propertyName, mixed $propertyValue): void
+    {
+        if (!$this->isEventTrackingEnabled) {
+            return;
+        }
+
+        $this->eventTrackingService->register($propertyName, $propertyValue);
+    }
+
+    /**
      * @return void
      */
     public function trackPerson(): void
@@ -154,6 +170,11 @@ class Featurit
         return $this->backupCache;
     }
 
+    public function getCacheTtlMinutes(): int
+    {
+        return $this->cacheTtlMinutes;
+    }
+
     public function getHttpClient(): HttpMethodsClientInterface
     {
         return $this->clientBuilder->getHttpClient();
@@ -185,7 +206,7 @@ class Featurit
      * @return void
      */
     public function setFeaturitUserContextProvider(
-        ?FeaturitUserContext $featuritUserContext = null,
+        ?FeaturitUserContext         $featuritUserContext = null,
         ?FeaturitUserContextProvider $featuritUserContextProvider = null
     ): void
     {
@@ -210,15 +231,20 @@ class Featurit
      */
     private function setCache(?CacheInterface $cache, int $cacheTtlMinutes): void
     {
+        $this->cacheTtlMinutes = $cacheTtlMinutes;
+
+        $analyticsCache = $cache;
+        $backupCache = $cache;
+
         if (is_null($cache)) {
             $cache = $this->localCacheFactory->setLocalCache($cacheTtlMinutes, 'cache', true);
+            $analyticsCache = $this->localCacheFactory->setLocalCache(0, 'analytics', false);
+            $backupCache = $this->localCacheFactory->setLocalCache(0, 'backup', false);
         }
 
-        $this->analyticsCache = $this->localCacheFactory->setLocalCache(0, 'analytics', false);
-
-        $this->backupCache = $this->localCacheFactory->setLocalCache(0, 'backup', false);
-
         $this->cache = $cache;
+        $this->analyticsCache = $analyticsCache;
+        $this->backupCache = $backupCache;
     }
 
     /**

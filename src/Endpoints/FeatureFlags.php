@@ -26,8 +26,8 @@ class FeatureFlags
     {
         $featuritUserContext = $this->featurit->getUserContext();
 
-        $cacheKey = "featureFlags_{$this->featurit->getApiKey()}";
-        $backupCacheKey = "backup_{$cacheKey}";
+        $cacheKey = "featurit:featureFlags:{$this->featurit->getApiKey()}";
+        $backupCacheKey = "featurit:backup:{$cacheKey}";
 
         try {
             if ($this->featurit->getCache()->has($cacheKey)) {
@@ -52,7 +52,8 @@ class FeatureFlags
 
             $featureFlagArrayResponse = ResponseMediator::getContent($featureFlagsApiResponse);
 
-            $this->featurit->getCache()->set($cacheKey, $featureFlagArrayResponse);
+            $ttlSeconds = $this->featurit->getCacheTtlMinutes() * 60;
+            $this->featurit->getCache()->set($cacheKey, $featureFlagArrayResponse, $ttlSeconds);
             $this->featurit->getBackupCache()->set($backupCacheKey, $featureFlagArrayResponse);
 
             $featureFlags = (new FeatureFlagsHydrator())->hydrate($featureFlagArrayResponse);
