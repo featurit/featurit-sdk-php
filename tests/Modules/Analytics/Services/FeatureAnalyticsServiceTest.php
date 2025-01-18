@@ -59,7 +59,8 @@ class FeatureAnalyticsServiceTest extends TestCase
         $analyticsService = new FeatureAnalyticsService(
             $cacheFactory->setLocalCache(0, self::TEST_CACHE_DIR, false),
             $mockAnalyticsSender,
-            -2
+            -2,
+            'random_api_key'
         );
 
         $featureFlag = new FeatureFlag(
@@ -89,7 +90,8 @@ class FeatureAnalyticsServiceTest extends TestCase
         $analyticsService = new FeatureAnalyticsService(
             $cacheFactory->setLocalCache(0, self::TEST_CACHE_DIR, false),
             $mockAnalyticsSender,
-            1
+            1,
+            'random_api_key'
         );
 
         $currentTime = new DateTime('2023-06-10 00:00:00');

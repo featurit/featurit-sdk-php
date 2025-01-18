@@ -14,6 +14,7 @@ class FeatureAnalyticsService
         private CacheInterface $analyticsCache,
         private AnalyticsSender $analyticsSender,
         private int $sendAnalyticsIntervalMinutes,
+        private string $environmentKey,
     )
     {
     }
@@ -29,7 +30,7 @@ class FeatureAnalyticsService
             $now = new DateTime();
         }
 
-        $analyticsCacheKey = "analytics_bucket";
+        $analyticsCacheKey = "analytics_bucket_$this->environmentKey";
 
         // Get or create the analytics bucket.
         if ($this->analyticsCache->has($analyticsCacheKey)) {

@@ -286,7 +286,8 @@ class Featurit
         $this->featureAnalyticsService = new FeatureAnalyticsService(
             $this->getAnalyticsCache(),
             new AnalyticsSender($this->getHttpClient()),
-            $sendAnalyticsIntervalMinutes
+            $sendAnalyticsIntervalMinutes,
+            $this->apiKey
         );
     }
 

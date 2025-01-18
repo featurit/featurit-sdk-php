@@ -26,8 +26,8 @@ class FeatureFlags
     {
         $featuritUserContext = $this->featurit->getUserContext();
 
-        $cacheKey = "featurit:featureFlags:{$this->featurit->getApiKey()}";
-        $backupCacheKey = "featurit:backup:{$cacheKey}";
+        $cacheKey = "feature_flags_{$this->featurit->getApiKey()}";
+        $backupCacheKey = "backup_$cacheKey";
 
         try {
             if ($this->featurit->getCache()->has($cacheKey)) {
